@@ -30,6 +30,12 @@ public class RequestProcessor
                 case "create_tweet":
                     response = handleCreateTweet(request);
                     break;
+                case "follow":
+                    response = handleFollow(request);
+                    break;
+                case "unfollow":
+                    response = handleUnfollow(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
@@ -47,7 +53,7 @@ public class RequestProcessor
     {
         JSONObject res = new JSONObject();
         try
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         {
+        {
             String username = request.getString("username");
             String email = request.getString("email");
             String password = request.getString("password");
@@ -89,17 +95,68 @@ public class RequestProcessor
     }
 
     private JSONObject handleCreateTweet(JSONObject request)
-    {        JSONObject res = new JSONObject();
-        try {
+    {
+        JSONObject res = new JSONObject();
+        try
+        {
             String username = request.getString("username");
             String content = request.getString("content");
 
             boolean success = DatabaseManager.createTweet(username, content);
             res.put("success", success);
             res.put("message", success ? "Tweet published!" : "Failed to publish tweet.");
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             res.put("success", false);
             res.put("message", "Invalid tweet data: " + e.getMessage());
+        }
+        return res;
+    }
+
+    private JSONObject handleFollow(JSONObject request)
+    {
+        JSONObject res = new JSONObject();
+        try
+        {
+            String follower = request.getString("follower_username");
+            String following = request.getString("following_username");
+
+            if (follower.equals(following))
+            {
+                res.put("success", false);
+                res.put("message", "You cannot follow yourself.");
+                return res;
+            }
+
+            boolean success = DatabaseManager.followUser(follower, following);
+            res.put("success", success);
+            res.put("message", success ? "Successfully followed " + following : "Failed to follow user (User may not exist or already followed).");
+        }
+        catch (Exception e)
+        {
+            res.put("success", false);
+            res.put("message", "Error in follow request: " + e.getMessage());
+        }
+        return res;
+    }
+
+    private JSONObject handleUnfollow(JSONObject request)
+    {
+        JSONObject res = new JSONObject();
+        try
+        {
+            String follower = request.getString("follower_username");
+            String following = request.getString("following_username");
+
+            boolean success = DatabaseManager.unfollowUser(follower, following);
+            res.put("success", success);
+            res.put("message", success ? "Successfully unfollowed " + following : "Failed to unfollow user.");
+        }
+        catch (Exception e)
+        {
+            res.put("success", false);
+            res.put("message", "Error in unfollow request: " + e.getMessage());
         }
         return res;
     }

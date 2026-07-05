@@ -96,4 +96,70 @@ public class DatabaseManager
             return false;
         }
     }
+
+    public static int getUserIdByUsername(String username)
+    {
+        String sql = "SELECT id FROM users WHERE username = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery())
+            {
+                if (rs.next())
+                {
+                    return rs.getInt("id");
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Error finding user ID: " + e.getMessage());
+        }
+        return -1;
+    }
+
+
+    public static boolean followUser(String followerUsername, String followingUsername)
+    {
+        int followerId = getUserIdByUsername(followerUsername);
+        int followingId = getUserIdByUsername(followingUsername);
+
+        if (followerId == -1 || followingId == -1 || followerId == followingId) return false;
+
+        String sql = "INSERT INTO follows (follower_id, following_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, followerId);
+            pstmt.setInt(2, followingId);
+            return pstmt.executeUpdate() > 0;
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Follow error: " + e.getMessage());
+            return false;
+        }
+    }
+
+
+    public static boolean unfollowUser(String followerUsername, String followingUsername)
+    {
+        int followerId = getUserIdByUsername(followerUsername);
+        int followingId = getUserIdByUsername(followingUsername);
+
+        String sql = "DELETE FROM follows WHERE follower_id = ? AND following_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, followerId);
+            pstmt.setInt(2, followingId);
+            return pstmt.executeUpdate() > 0;
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Unfollow error: " + e.getMessage());
+            return false;
+        }
+    }
 }
