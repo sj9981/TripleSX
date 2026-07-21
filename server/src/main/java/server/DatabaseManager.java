@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 
 public class DatabaseManager
 {
-
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
     private static final String PASSWORD = "Sa123456*";
@@ -18,31 +17,28 @@ public class DatabaseManager
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
 
-    /**
-     * ثبت‌نام کاربر جدید
-     */
+
     public static boolean registerUser(String username, String email, String rawPassword,
-                                       String displayName, String bio, String avatarPath) {
+                                       String displayName, String bio, String avatarPath, String bannerPath) {
 
         String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-        String sql = "INSERT INTO users (username, email, password_hash, display_name, bio, avatar_path) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, email, password_hash, display_name, bio, avatar_path, banner_path) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-
             pstmt.setString(1, username);
             pstmt.setString(2, email);
             pstmt.setString(3, hashedPassword);
             pstmt.setString(4, displayName);
             pstmt.setString(5, bio);
             pstmt.setString(6, avatarPath);
+            pstmt.setString(7, bannerPath);
 
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
-
         }
         catch (SQLException e)
         {
@@ -58,7 +54,6 @@ public class DatabaseManager
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-
             pstmt.setString(1, username);
 
             try (ResultSet resultSet = pstmt.executeQuery())
@@ -69,8 +64,8 @@ public class DatabaseManager
                     return BCrypt.checkpw(rawPassword, storedHash);
                 }
             }
-
-        } catch (SQLException e)
+        }
+        catch (SQLException e)
         {
             System.err.println("Login error: " + e.getMessage());
         }
@@ -83,7 +78,6 @@ public class DatabaseManager
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-
             pstmt.setString(1, username);
             pstmt.setString(2, content);
 
@@ -119,7 +113,6 @@ public class DatabaseManager
         return -1;
     }
 
-
     public static boolean followUser(String followerUsername, String followingUsername)
     {
         int followerId = getUserIdByUsername(followerUsername);
@@ -141,7 +134,6 @@ public class DatabaseManager
             return false;
         }
     }
-
 
     public static boolean unfollowUser(String followerUsername, String followingUsername)
     {
