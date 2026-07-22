@@ -1,14 +1,13 @@
 package client;
 
 import org.json.JSONObject;
-
 import java.util.Scanner;
 
 public class MainClient
 {
     public static void main(String[] args)
     {
-        NetworkManager networkManager = new NetworkManager();
+        NetworkManager networkManager = NetworkManager.getInstance();
         Scanner scanner = new Scanner(System.in);
 
         try

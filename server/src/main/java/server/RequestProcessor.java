@@ -4,7 +4,6 @@ import org.json.JSONObject;
 
 public class RequestProcessor
 {
-
     public String process(String jsonRequest)
     {
         JSONObject response = new JSONObject();
@@ -58,11 +57,12 @@ public class RequestProcessor
             String email = request.getString("email");
             String password = request.getString("password");
 
+            String displayName = request.has("displayName") ? request.getString("displayName") : username;
             String bio = request.has("bio") ? request.getString("bio") : "";
-            String avatar = request.has("avatar") ? request.getString("avatar") : "";
-            String banner = request.has("banner") ? request.getString("banner") : "";
+            String avatar = request.has("avatar") ? request.getString("avatar") : "default.png";
+            String banner = request.has("banner") ? request.getString("banner") : "default_banner.png";
 
-            boolean success = DatabaseManager.registerUser(username, email, password, bio, avatar, banner);
+            boolean success = DatabaseManager.registerUser(username, email, password, displayName, bio, avatar, banner);
             res.put("success", success);
             res.put("message", success ? "Registration successful!" : "Registration failed.");
         }
