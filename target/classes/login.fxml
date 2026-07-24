@@ -1,45 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/21"
-      xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.LoginController"
-      style="-fx-background-color: #ffffff;">
+<StackPane prefHeight="700.0" prefWidth="1000.0"
+           stylesheets="@style.css"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="client.LoginController"
+           styleClass="auth-root">
 
-    <padding>
-        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
-    </padding>
+    <VBox maxWidth="380.0" spacing="16.0" styleClass="auth-card">
+        <padding>
+            <Insets top="30.0" right="30.0" bottom="30.0" left="30.0"/>
+        </padding>
 
-    <Label text="Log in to X" style="-fx-font-weight: bold;">
-        <font>
-            <Font size="24.0" />
-        </font>
-    </Label>
+        <Label text="Welcome back" styleClass="auth-title"/>
+        <Label text="Log in to your account" styleClass="auth-subtitle"/>
 
-    <VBox spacing="10.0">
-        <Label text="Username" />
-        <TextField fx:id="usernameField" promptText="Enter your username"
-                   style="-fx-pref-height: 40; -fx-background-radius: 5;" />
+        <VBox spacing="8.0">
+            <Label text="Username" styleClass="auth-label"/>
+            <TextField fx:id="usernameField"
+                       promptText="Enter your username"
+                       styleClass="auth-field"/>
+        </VBox>
 
-        <Label text="Password" />
-        <PasswordField fx:id="passwordField" promptText="Enter your password"
-                       style="-fx-pref-height: 40; -fx-background-radius: 5;" />
-    </VBox>
+        <VBox spacing="8.0">
+            <Label text="Password" styleClass="auth-label"/>
+            <PasswordField fx:id="passwordField"
+                           promptText="Enter your password"
+                           styleClass="auth-password"/>
+        </VBox>
 
-    <Label fx:id="statusLabel" textAlignment="CENTER" wrapText="true" />
+        <Label fx:id="statusLabel"
+               text=""
+               wrapText="true"
+               styleClass="auth-subtitle"/>
 
-    <VBox spacing="10.0" alignment="CENTER">
-        <Button maxWidth="Infinity" style="-fx-background-color: #1DA1F2; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20; -fx-pref-height: 40; -fx-cursor: hand;"
-                text="Log In" onAction="#handleLogin" />
+        <Button text="Log In"
+                onAction="#handleLogin"
+                maxWidth="Infinity"
+                styleClass="auth-button"/>
 
-        <HBox spacing="10.0" alignment="CENTER">
-            <Label text="Don't have an account?" />
-            <Button text="Register" onAction="#handleRegister"
-                    style="-fx-background-color: transparent; -fx-text-fill: #1DA1F2; -fx-cursor: hand; -fx-underline: true;" />
+        <HBox spacing="5.0">
+            <Label text="Don't have an account?" styleClass="auth-subtitle"/>
+            <Label text="Sign up"
+                   onMouseClicked="#handleRegister"
+                   styleClass="auth-link"/>
         </HBox>
     </VBox>
-
-</VBox>
+</StackPane>
