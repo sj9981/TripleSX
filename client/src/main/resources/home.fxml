@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+
+<HBox prefHeight="700.0" prefWidth="1000.0"
+      stylesheets="@style.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="client.HomeController">
+
+    <VBox prefWidth="250.0" spacing="10"
+          style="-fx-border-color: #2f3336; -fx-border-width: 0 1 0 0; -fx-background-color: #000000;">
+        <padding>
+            <Insets top="20" left="20" right="10" bottom="20"/>
+        </padding>
+
+        <Circle radius="15" fill="#1d9bf0" />
+
+        <Region prefHeight="20"/>
+        <Button text="Home" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="Explore" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="Notifications" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="Messages" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="Profile" styleClass="sidebar-button" maxWidth="Infinity"/>
+
+        <Region VBox.vgrow="ALWAYS"/>
+        <Button text="Logout" onAction="#handleLogout" styleClass="sidebar-button" maxWidth="Infinity"/>
+    </VBox>
+
+    <ScrollPane fitToWidth="true"
+                hbarPolicy="NEVER"
+                vbarPolicy="AS_NEEDED"
+                HBox.hgrow="ALWAYS"
+                style="-fx-background-color: black; -fx-background: black; -fx-border-color: transparent;">
+        <content>
+            <VBox spacing="0" maxWidth="650.0">
+                <padding>
+                    <Insets top="0" left="0" right="0" bottom="0"/>
+                </padding>
+
+                <Label text="Home"
+                       style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 15;"/>
+
+                <VBox spacing="10"
+                      style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;">
+                    <HBox spacing="10">
+                        <Circle radius="20" fill="#333"/>
+                        <TextArea fx:id="tweetTextArea"
+                                  prefHeight="80"
+                                  promptText="What's happening?"
+                                  styleClass="tweet-box"
+                                  wrapText="true"
+                                  HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox alignment="CENTER_RIGHT">
+                        <Button text="Post" onAction="#handlePostTweet" styleClass="post-button"/>
+                    </HBox>
+                </VBox>
+
+                <VBox fx:id="feedContainer"/>
+            </VBox>
+        </content>
+    </ScrollPane>
+
+    <VBox prefWidth="300.0" spacing="15"
+          style="-fx-border-color: #2f3336; -fx-border-width: 0 0 0 1; -fx-background-color: #000000;">
+        <padding>
+            <Insets top="20" left="20" right="20" bottom="20"/>
+        </padding>
+
+        <VBox spacing="10" styleClass="trends-panel">
+            <Label text="What's happening"
+                   style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: 800;"/>
+            <Label text="#JavaFX" style="-fx-text-fill: #1d9bf0;"/>
+            <Label text="#TripleSX" style="-fx-text-fill: #1d9bf0;"/>
+            <Label text="#OpenAI" style="-fx-text-fill: #1d9bf0;"/>
+        </VBox>
+    </VBox>
+
+</HBox>

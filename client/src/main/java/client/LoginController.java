@@ -11,9 +11,10 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import org.json.JSONObject;
 
+import java.io.IOException;
+
 public class LoginController
 {
-
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
     @FXML private Label statusLabel;
@@ -57,6 +58,23 @@ public class LoginController
                 statusLabel.setTextFill(javafx.scene.paint.Color.GREEN);
                 statusLabel.setText("Login successful! Welcome, " + username);
 
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/home.fxml"));
+                    Parent root = loader.load();
+
+                    HomeController homeController = loader.getController();
+                    homeController.setUsername(username);
+
+                    Stage stage = (Stage) usernameField.getScene().getWindow();
+                    stage.setScene(new Scene(root));
+                    stage.setTitle("X Clone - Home");
+                    stage.show();
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    statusLabel.setTextFill(javafx.scene.paint.Color.RED);
+                    statusLabel.setText("Error loading Home screen. Check console.");
+                }
             }
             else
             {
