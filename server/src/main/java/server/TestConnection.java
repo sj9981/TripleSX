@@ -14,6 +14,7 @@ public class TestConnection
                 "/uploads/banners/ali.jpg"
         );
 
+
         if (success)
         {
             System.out.println(" کاربر با موفقیت در دیتابیس ثبت شد!");
@@ -24,3 +25,4 @@ public class TestConnection
         }
     }
 }
+

@@ -11,6 +11,7 @@ public class Main
                 testUser, "ali@test.com", testPass, "Ali", "Hello world!", "avatar.png", "banner.png"
         );
 
+
         if (registered)
         {
             System.out.println(" کاربر با موفقیت ثبت‌نام شد.");
