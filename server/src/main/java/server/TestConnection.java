@@ -10,8 +10,10 @@ public class TestConnection
                 "hashed_password_123",
                 "Ali Developer",
                 "at work",
-                "/uploads/avatars/ali.jpg"
+                "/uploads/avatars/ali.jpg",
+                "/uploads/banners/ali.jpg"
         );
+
 
         if (success)
         {

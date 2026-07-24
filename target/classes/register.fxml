@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.RegisterController"
+      style="-fx-background-color: #ffffff;">
+
+    <padding>
+        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+    </padding>
+
+    <Label text="Create your account" style="-fx-font-weight: bold;">
+        <font>
+            <Font size="22.0" />
+        </font>
+    </Label>
+
+    <VBox spacing="8.0">
+        <Label text="Username" />
+        <TextField fx:id="usernameField" promptText="Choose a username" style="-fx-pref-height: 35;" />
+
+        <Label text="Email" />
+        <TextField fx:id="emailField" promptText="Enter your email" style="-fx-pref-height: 35;" />
+
+        <Label text="Password" />
+        <PasswordField fx:id="passwordField" promptText="Create a password" style="-fx-pref-height: 35;" />
+    </VBox>
+
+    <Label fx:id="statusLabel" textAlignment="CENTER" wrapText="true" />
+
+    <Button maxWidth="Infinity" text="Sign Up" onAction="#handleSignUp"
+            style="-fx-background-color: #1DA1F2; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20; -fx-pref-height: 40; -fx-cursor: hand;" />
+
+    <Button text="Back to Login" onAction="#goToLogin"
+            style="-fx-background-color: transparent; -fx-text-fill: #1DA1F2; -fx-cursor: hand;" />
+
+</VBox>

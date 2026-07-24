@@ -8,8 +8,9 @@ public class Main
         String testPass = "mySecret123";
 
         boolean registered = DatabaseManager.registerUser(
-                testUser, "ali@test.com", testPass, "Ali", "Hello world!", "avatar.png"
+                testUser, "ali@test.com", testPass, "Ali", "Hello world!", "avatar.png", "banner.png"
         );
+
 
         if (registered)
         {
