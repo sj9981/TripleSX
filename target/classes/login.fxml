@@ -32,11 +32,9 @@
     <Label fx:id="statusLabel" textAlignment="CENTER" wrapText="true" />
 
     <VBox spacing="10.0" alignment="CENTER">
-        <!-- دکمه لاگین اصلی -->
         <Button maxWidth="Infinity" style="-fx-background-color: #1DA1F2; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20; -fx-pref-height: 40; -fx-cursor: hand;"
                 text="Log In" onAction="#handleLogin" />
 
-        <!-- بخش ثبت‌نام -->
         <HBox spacing="10.0" alignment="CENTER">
             <Label text="Don't have an account?" />
             <Button text="Register" onAction="#handleRegister"
