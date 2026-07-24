@@ -1,6 +1,7 @@
 package client;
 
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -16,6 +17,10 @@ public class RegisterController
     @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
     @FXML private Label statusLabel;
+    @FXML private TextField passwordVisibleField;
+    @FXML private Button togglePasswordButton;
+
+    private boolean passwordShown = false;
 
     @FXML
     private void handleSignUp()
@@ -86,4 +91,31 @@ public class RegisterController
             e.printStackTrace();
         }
     }
+
+    //For toggling between visible and hidden password status.
+    @FXML
+    public void togglePasswordVisibility(ActionEvent actionEvent) {
+        passwordShown = !passwordShown;
+
+        if (passwordShown) {
+            passwordVisibleField.setVisible(true);
+            passwordVisibleField.setManaged(true);
+            passwordField.setVisible(false);
+            passwordField.setManaged(false);
+            togglePasswordButton.setText("🙈");
+        } else {
+            passwordVisibleField.setVisible(false);
+            passwordVisibleField.setManaged(false);
+            passwordField.setVisible(true);
+            passwordField.setManaged(true);
+            togglePasswordButton.setText("\uD83D\uDE49");
+        }
+    }
+
+    //binding the password hidden field with the password shown filed
+    @FXML
+    private void initialize() {
+        passwordVisibleField.textProperty().bindBidirectional(passwordField.textProperty());
+    }
+
 }

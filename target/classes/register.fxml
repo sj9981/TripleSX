@@ -40,9 +40,25 @@
 
         <VBox spacing="8.0">
             <Label text="Password" styleClass="auth-label"/>
-            <PasswordField fx:id="passwordField"
-                           promptText="Create a password"
-                           styleClass="auth-password"/>
+
+            <HBox spacing="8.0" alignment="CENTER_LEFT">
+                <StackPane HBox.hgrow="ALWAYS">
+                    <PasswordField fx:id="passwordField"
+                                   promptText="Create a password"
+                                   styleClass="auth-password"/>
+
+                    <TextField fx:id="passwordVisibleField"
+                               promptText="Create a password"
+                               visible="false"
+                               managed="false"
+                               styleClass="auth-password"/>
+                </StackPane>
+
+                <Button fx:id="togglePasswordButton"
+                        text="🙉"
+                        onAction="#togglePasswordVisibility"
+                        styleClass="eye-button"/>
+            </HBox>
         </VBox>
 
         <Label fx:id="statusLabel"

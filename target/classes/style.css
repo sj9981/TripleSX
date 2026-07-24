@@ -1,9 +1,7 @@
-/* --- Global --- */
 .root {
     -fx-background-color: #000000;
 }
 
-/* --- Sidebar --- */
 .sidebar-button {
     -fx-background-color: transparent;
     -fx-text-fill: white;
@@ -18,8 +16,6 @@
     -fx-background-color: #181818;
 }
 
-/* --- Composer & Input --- */
-/* این بخش برای حذف کامل پس‌زمینه سفید TextArea حیاتی است */
 .tweet-box,
 .tweet-box .content,
 .tweet-box .scroll-pane,
@@ -45,7 +41,6 @@
     -fx-background-color: #1a8cd8;
 }
 
-/* --- Feed Cards --- */
 .tweet-card {
     -fx-background-color: transparent;
     -fx-border-color: #2f3336;
@@ -69,7 +64,6 @@
     -fx-font-size: 15px;
 }
 
-/* --- Right Panel --- */
 .trends-panel {
     -fx-background-color: #16181c;
     -fx-background-radius: 15;
@@ -146,4 +140,28 @@
 
 .auth-link:hover {
     -fx-underline: true;
+}
+
+.eye-button {
+    -fx-background-color: #202327;
+    -fx-text-fill: #e7e9ea;
+    -fx-font-size: 15px;
+    -fx-background-radius: 10;
+    -fx-border-color: #2f3336;
+    -fx-border-radius: 10;
+    -fx-cursor: hand;
+    -fx-min-width: 44px;
+    -fx-min-height: 44px;
+    -fx-max-width: 44px;
+    -fx-max-height: 44px;
+    -fx-padding: 0;
+}
+
+.eye-button:hover {
+    -fx-background-color: #2f3336;
+    -fx-border-color: #1d9bf0;
+}
+
+.eye-button:focused {
+    -fx-border-color: #1d9bf0;
 }
