@@ -4,6 +4,7 @@ import org.json.JSONObject;
 
 public class RequestProcessor
 {
+
     public String process(String jsonRequest)
     {
         JSONObject response = new JSONObject();
@@ -48,32 +49,25 @@ public class RequestProcessor
         return response.toString();
     }
 
-    private JSONObject handleRegister(JSONObject request) {
+    private JSONObject handleRegister(JSONObject request)
+    {
         JSONObject res = new JSONObject();
-        try {
-            String username = request.optString("username", "").trim();
-            String email = request.optString("email", "").trim();
-            String password = request.optString("password", "").trim();
+        try
+        {
+            String username = request.getString("username");
+            String email = request.getString("email");
+            String password = request.getString("password");
 
-            if (username.isEmpty() || password.isEmpty()) {
-                res.put("success", false);
-                res.put("message", "Username and password are required.");
-                return res;
-            }
+            String bio = request.has("bio") ? request.getString("bio") : "";
+            String avatar = request.has("avatar") ? request.getString("avatar") : "";
+            String banner = request.has("banner") ? request.getString("banner") : "";
 
-            if (email.isEmpty()) {
-                email = username + "@example.com";
-            }
-
-            String displayName = request.optString("displayName", username);
-            String bio = request.optString("bio", "");
-            String avatar = request.optString("avatar", "default.png");
-            String banner = request.optString("banner", "default_banner.png");
-
-            boolean success = DatabaseManager.registerUser(username, email, password, displayName, bio, avatar, banner);
+            boolean success = DatabaseManager.registerUser(username, email, password, bio, avatar, banner);
             res.put("success", success);
-            res.put("message", success ? "Registration successful!" : "User already exists or registration failed.");
-        } catch (Exception e) {
+            res.put("message", success ? "Registration successful!" : "Registration failed.");
+        }
+        catch (Exception e)
+        {
             res.put("success", false);
             res.put("message", "Error: " + e.getMessage());
         }
@@ -167,4 +161,3 @@ public class RequestProcessor
         return res;
     }
 }
-
