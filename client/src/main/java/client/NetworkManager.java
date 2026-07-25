@@ -106,7 +106,8 @@ public class NetworkManager
 
         String responseStr = sendRequest(request.toString());
 
-        if (responseStr == null || responseStr.isEmpty()) {
+        if (responseStr == null || responseStr.isEmpty())
+        {
             JSONObject error = new JSONObject();
             error.put("success", false);
             error.put("message", "Empty response from server.");
@@ -119,5 +120,23 @@ public class NetworkManager
     {
         String defaultEmail = username + "@xclone.com";
         return register(username, defaultEmail, password);
+    }
+
+    public JSONObject getUserProfile(String username)
+    {
+        JSONObject request = new JSONObject();
+        request.put("action", "get_profile");
+        request.put("username", username);
+
+        String responseStr = sendRequest(request.toString());
+
+        if (responseStr == null || responseStr.isEmpty())
+        {
+            JSONObject error = new JSONObject();
+            error.put("success", false);
+            error.put("message", "Empty response from server.");
+            return error;
+        }
+        return new JSONObject(responseStr);
     }
 }

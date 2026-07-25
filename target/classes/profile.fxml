@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+
+<VBox spacing="0"
+      style="-fx-background-color: black;"
+      xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="client.ProfileController">
+
+    <StackPane prefHeight="150" style="-fx-background-color: #333333;">
+        <ImageView fx:id="bannerImageView"
+                   fitHeight="150"
+                   fitWidth="800"
+                   preserveRatio="false" />
+
+        <Button text="Back"
+                onAction="#handleBack"
+                StackPane.alignment="TOP_LEFT"
+                style="-fx-text-fill: white; -fx-background-color: rgba(0,0,0,0.5); -fx-background-radius: 20; -fx-cursor: hand;">
+            <StackPane.margin>
+                <Insets top="10" left="10"/>
+            </StackPane.margin>
+        </Button>
+    </StackPane>
+
+    <VBox spacing="15">
+        <padding>
+            <Insets left="20" right="20" bottom="20"/>
+        </padding>
+
+
+        <HBox alignment="BOTTOM_LEFT" spacing="10">
+            <VBox style="-fx-translate-y: -50;">
+                <StackPane prefWidth="110" prefHeight="110" minWidth="110" minHeight="110" maxWidth="110" maxHeight="110">
+                    <Circle radius="52" fill="#1f1f1f" stroke="white" strokeWidth="2"/>
+                    <ImageView fx:id="avatarImageView"
+                               fitWidth="100"
+                               fitHeight="100"
+                               preserveRatio="false"
+                               style="-fx-effect: dropshadow(three-pass-box, black, 5, 0, 0, 0);" />
+                </StackPane>
+            </VBox>
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <Button text="Edit Profile"
+                    style="-fx-background-color: black; -fx-text-fill: white; -fx-border-color: white; -fx-border-radius: 20; -fx-padding: 5 15; -fx-cursor: hand;"/>
+        </HBox>
+
+        <VBox spacing="2" style="-fx-translate-y: -15;">
+            <Label fx:id="displayNameLabel"
+                   style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+            <Label fx:id="usernameLabel"
+                   style="-fx-font-size: 16; -fx-text-fill: gray;"/>
+
+            <Label fx:id="bioLabel"
+                   wrapText="true"
+                   style="-fx-text-fill: white; -fx-font-size: 15;">
+                <VBox.margin>
+                    <Insets top="10"/>
+                </VBox.margin>
+            </Label>
+        </VBox>
+
+        <HBox spacing="20" style="-fx-translate-y: -5;">
+            <HBox spacing="5">
+                <Label fx:id="followingCountLabel" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+                <Label text="Following" style="-fx-text-fill: gray;"/>
+            </HBox>
+
+            <HBox spacing="5">
+                <Label fx:id="followerCountLabel" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+                <Label text="Followers" style="-fx-text-fill: gray;"/>
+            </HBox>
+        </HBox>
+
+        <Separator style="-fx-background-color: #333; -fx-opacity: 0.2;"/>
+
+        <Label text="Tweets"
+               style="-fx-text-fill: white; -fx-font-size: 18; -fx-font-weight: bold;"/>
+
+        <ScrollPane fitToWidth="true"
+                    style="-fx-background: black; -fx-background-color: black; -fx-border-color: transparent;">
+            <content>
+                <VBox fx:id="userTweetsContainer"
+                      spacing="10"
+                      style="-fx-background-color: black;"/>
+            </content>
+        </ScrollPane>
+    </VBox>
+
+</VBox>

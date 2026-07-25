@@ -35,6 +35,9 @@ public class RequestProcessor
                 case "unfollow":
                     response = handleUnfollow(request);
                     break;
+                case "get_profile":
+                    response = handleGetProfile(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
@@ -48,20 +51,23 @@ public class RequestProcessor
         return response.toString();
     }
 
-    private JSONObject handleRegister(JSONObject request) {
+    private JSONObject handleRegister(JSONObject request)
+    {
         JSONObject res = new JSONObject();
         try {
             String username = request.optString("username", "").trim();
             String email = request.optString("email", "").trim();
             String password = request.optString("password", "").trim();
 
-            if (username.isEmpty() || password.isEmpty()) {
+            if (username.isEmpty() || password.isEmpty())
+            {
                 res.put("success", false);
                 res.put("message", "Username and password are required.");
                 return res;
             }
 
-            if (email.isEmpty()) {
+            if (email.isEmpty())
+            {
                 email = username + "@example.com";
             }
 
@@ -73,7 +79,9 @@ public class RequestProcessor
             boolean success = DatabaseManager.registerUser(username, email, password, displayName, bio, avatar, banner);
             res.put("success", success);
             res.put("message", success ? "Registration successful!" : "User already exists or registration failed.");
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             res.put("success", false);
             res.put("message", "Error: " + e.getMessage());
         }
@@ -163,6 +171,60 @@ public class RequestProcessor
         {
             res.put("success", false);
             res.put("message", "Error in unfollow request: " + e.getMessage());
+        }
+        return res;
+    }
+
+    private JSONObject handleGetProfile(JSONObject request)
+    {
+        JSONObject res = new JSONObject();
+        try
+        {
+            String username = request.getString("username");
+
+            DatabaseManager.UserProfile userProfileData = DatabaseManager.getUserProfile(username);
+            if (userProfileData == null)
+            {
+                res.put("success", false);
+                res.put("message", "User not found.");
+                return res;
+            }
+
+            int userId = DatabaseManager.getUserIdByUsername(username);
+            int followerCount = DatabaseManager.getFollowerCount(userId);
+            int followingCount = DatabaseManager.getFollowingCount(userId);
+
+            res.put("success", true);
+            res.put("message", "Profile data retrieved successfully.");
+
+            JSONObject userProfileJson = new JSONObject();
+            userProfileJson.put("username", userProfileData.getUsername());
+            userProfileJson.put("displayName", userProfileData.getDisplayName());
+            userProfileJson.put("bio", userProfileData.getBio());
+            userProfileJson.put("avatarPath", userProfileData.getAvatarPath());
+            userProfileJson.put("bannerPath", userProfileData.getBannerPath());
+            userProfileJson.put("followerCount", followerCount);
+            userProfileJson.put("followingCount", followingCount);
+            res.put("user", userProfileJson);
+
+            org.json.JSONArray tweetsArray = new org.json.JSONArray();
+            java.util.List<String> userTweets = DatabaseManager.getUserTweets(username);
+            for (String tweetContent : userTweets)
+            {
+                tweetsArray.put(tweetContent);
+            }
+            res.put("tweets", tweetsArray);
+
+        }
+        catch (org.json.JSONException e)
+        {
+            res.put("success", false);
+            res.put("message", "Invalid request format.");
+        }
+        catch (Exception e)
+        {
+            res.put("success", false);
+            res.put("message", "Internal server error: " + e.getMessage());
         }
         return res;
     }
