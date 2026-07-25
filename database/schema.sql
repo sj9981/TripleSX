@@ -62,3 +62,4 @@ CREATE TABLE IF NOT EXISTS follows (
 
     CHECK (follower_id <> following_id)
     );
+

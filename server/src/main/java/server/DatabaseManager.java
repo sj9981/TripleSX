@@ -290,3 +290,4 @@ public class DatabaseManager
         return tweets;
     }
 }
+
