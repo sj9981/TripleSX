@@ -17,14 +17,18 @@
             <Insets top="20" left="20" right="10" bottom="20"/>
         </padding>
 
-        <Circle radius="15" fill="#1d9bf0" />
+        <StackPane>
+            <Circle radius="18" fill="#1d9bf0" />
+            <Label text="X"
+                   style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" />
+        </StackPane>
 
         <Region prefHeight="20"/>
         <Button text="Home" styleClass="sidebar-button" maxWidth="Infinity"/>
         <Button text="Explore" styleClass="sidebar-button" maxWidth="Infinity"/>
         <Button text="Notifications" styleClass="sidebar-button" maxWidth="Infinity"/>
         <Button text="Messages" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Profile" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="Profile" onAction="#handleGoToProfile" styleClass="sidebar-button" maxWidth="Infinity"/>
 
         <Region VBox.vgrow="ALWAYS"/>
         <Button text="Logout" onAction="#handleLogout" styleClass="sidebar-button" maxWidth="Infinity"/>

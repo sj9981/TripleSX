@@ -141,27 +141,3 @@
 .auth-link:hover {
     -fx-underline: true;
 }
-
-.eye-button {
-    -fx-background-color: #202327;
-    -fx-text-fill: #e7e9ea;
-    -fx-font-size: 15px;
-    -fx-background-radius: 10;
-    -fx-border-color: #2f3336;
-    -fx-border-radius: 10;
-    -fx-cursor: hand;
-    -fx-min-width: 44px;
-    -fx-min-height: 44px;
-    -fx-max-width: 44px;
-    -fx-max-height: 44px;
-    -fx-padding: 0;
-}
-
-.eye-button:hover {
-    -fx-background-color: #2f3336;
-    -fx-border-color: #1d9bf0;
-}
-
-.eye-button:focused {
-    -fx-border-color: #1d9bf0;
-}
