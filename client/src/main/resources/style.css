@@ -166,3 +166,8 @@
     -fx-pref-width: 210px;
 }
 
+.auth-logo{
+    -fx-font-size: 42px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
