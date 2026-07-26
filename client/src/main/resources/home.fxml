@@ -24,14 +24,14 @@
         </StackPane>
 
         <Region prefHeight="20"/>
-        <Button text="Home" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Explore" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Notifications" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Messages" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Profile" onAction="#handleGoToProfile" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="  🏠" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  🔍" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  🔔" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  💬" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  👤" onAction="#handleGoToProfile" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
 
         <Region VBox.vgrow="ALWAYS"/>
-        <Button text="Logout" onAction="#handleLogout" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="Logout" onAction="#handleLogout" styleClass="logout-button" maxWidth="Infinity"/>
     </VBox>
 
     <ScrollPane fitToWidth="true"
