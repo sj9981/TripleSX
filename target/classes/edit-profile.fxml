@@ -12,7 +12,6 @@
 
     <children>
 
-        <!-- Back button in top-left -->
         <AnchorPane StackPane.alignment="TOP_LEFT" pickOnBounds="false">
             <children>
                 <Button text="Back"
@@ -28,7 +27,6 @@
             </children>
         </AnchorPane>
 
-        <!-- Center card -->
         <VBox alignment="TOP_CENTER"
               spacing="18"
               maxWidth="520"
@@ -44,7 +42,6 @@
                               -fx-font-size: 30px;
                               -fx-font-weight: bold;" />
 
-                <!-- Avatar -->
                 <StackPane prefWidth="120" prefHeight="120"
                            maxWidth="120" maxHeight="120"
                            style="-fx-background-color: #22303C;
