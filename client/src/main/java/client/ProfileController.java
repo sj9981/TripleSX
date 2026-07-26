@@ -2,6 +2,7 @@ package client;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -13,9 +14,11 @@ import javafx.stage.Stage;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javafx.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+
 
 public class ProfileController
 {
@@ -272,6 +275,30 @@ public class ProfileController
         }
         catch (IOException e)
         {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleEditProfile(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/edit-profile.fxml"));
+            Parent root = loader.load();
+
+            EditProfileController controller = loader.getController();
+            controller.setPreviousScene("/profile.fxml");
+            controller.setUsername(currentUsername);
+
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            double w = stage.getWidth();
+            double h = stage.getHeight();
+
+            Scene scene = new Scene(root, w, h);
+            stage.setScene(scene);
+            stage.setTitle("X Clone - Edit Profile");
+            stage.setWidth(w);
+            stage.setHeight(h);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
