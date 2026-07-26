@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import org.mindrot.jbcrypt.BCrypt;
 import java.sql.ResultSet;
 
+import static org.postgresql.PGProperty.PASSWORD;
+
 public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
