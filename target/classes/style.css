@@ -180,3 +180,22 @@
     -fx-text-fill: white;
     -fx-font-weight: bold;
 }
+
+.delete-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #71767b;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+    -fx-background-radius: 20;
+    -fx-padding: 2 8;
+}
+
+.delete-button:hover {
+    -fx-background-color: rgba(244, 33, 46, 0.1);
+    -fx-text-fill: #f4212e;
+}
+
+.time-label {
+    -fx-text-fill: #71767b;
+    -fx-font-size: 12px;
+}

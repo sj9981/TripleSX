@@ -54,6 +54,9 @@ public class RequestProcessor {
                 case "search":
                     response = handleSearch(request);
                     break;
+                case "delete_tweet":
+                    response = handleDeleteTweet(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
@@ -298,6 +301,16 @@ public class RequestProcessor {
             res.put("success", false);
             res.put("message", "Error in search handler: " + e.getMessage());
         }
+        return res;
+    }
+    private JSONObject handleDeleteTweet(JSONObject request) {
+        JSONObject res = new JSONObject();
+        int tweetId = request.getInt("tweet_id");
+        String username = request.getString("username");
+
+        boolean success = DatabaseManager.deleteTweet(tweetId, username);
+        res.put("success", success);
+        res.put("message", success ? "Tweet deleted successfully" : "Unauthorized or error.");
         return res;
     }
 }

@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "12345";
+    private static final String PASSWORD = "123456";
 
     public static Connection getConnection() throws SQLException
     {
@@ -316,7 +316,7 @@ public class DatabaseManager
             return tweets;
 
         String sql =
-                "SELECT t.content, m.media_path " +
+                "SELECT t.id AS tweet_id, t.content, m.media_path " +
                         "FROM tweets t " +
                         "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
                         "WHERE t.user_id = ? " +
@@ -332,6 +332,7 @@ public class DatabaseManager
                 while (rs.next())
                 {
                     JSONObject tweet = new JSONObject();
+                    tweet.put("tweet_id", rs.getInt("tweet_id"));
                     tweet.put("content", rs.getString("content"));
 
                     String imagePath = rs.getString("media_path");
@@ -357,7 +358,8 @@ public class DatabaseManager
         JSONArray tweets = new JSONArray();
 
         String sql =
-                "SELECT u.username, " +
+                "SELECT t.id AS tweet_id, " +
+                        "u.username, " +
                         "u.display_name, " +
                         "u.avatar_path, " +
                         "t.content, " +
@@ -386,6 +388,7 @@ public class DatabaseManager
                 {
                     JSONObject tweet = new JSONObject();
 
+                    tweet.put("tweet_id", rs.getInt("tweet_id"));
                     tweet.put("username", rs.getString("username"));
                     tweet.put("display_name", rs.getString("display_name"));
                     tweet.put("avatar_path", rs.getString("avatar_path"));
@@ -535,5 +538,18 @@ public class DatabaseManager
             result.put("message", e.getMessage());
         }
         return result;
+    }
+    //To make sure user has access to the tweet to delete it
+    public static boolean deleteTweet(int tweetId, String username) {
+        String sql = "DELETE FROM tweets WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, tweetId);
+            pstmt.setString(2, username);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting tweet: " + e.getMessage());
+            return false;
+        }
     }
 }
