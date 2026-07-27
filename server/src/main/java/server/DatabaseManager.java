@@ -1,11 +1,9 @@
 package server;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+
+import org.json.JSONObject;
 import org.mindrot.jbcrypt.BCrypt;
-import java.sql.ResultSet;
 
 import static org.postgresql.PGProperty.PASSWORD;
 
@@ -14,6 +12,7 @@ public class DatabaseManager
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
     private static final String PASSWORD = "Sa123456*";
+
 
     public static Connection getConnection() throws SQLException
     {
@@ -131,24 +130,75 @@ public class DatabaseManager
         return false;
     }
 
-    public static boolean createTweet(String username, String content)
+    public static boolean createTweet(String username, String content, String imagePath)
     {
         int userId = getUserIdByUsername(username);
         if (userId == -1) return false;
 
-        String sql = "INSERT INTO tweets (user_id, content) VALUES (?, ?)";
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql))
-        {
-            pstmt.setInt(1, userId);
-            pstmt.setString(2, content);
+        String tweetSql = "INSERT INTO tweets (user_id, content) VALUES (?, ?)";
+        String mediaSql = "INSERT INTO tweet_media (tweet_id, media_path) VALUES (?, ?)";
 
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
+        try (Connection conn = getConnection())
+        {
+            conn.setAutoCommit(false);
+
+            try
+            {
+                int tweetId;
+
+                try (PreparedStatement pstmt = conn.prepareStatement(tweetSql, Statement.RETURN_GENERATED_KEYS))
+                {
+                    pstmt.setInt(1, userId);
+                    pstmt.setString(2, content);
+
+                    int affectedRows = pstmt.executeUpdate();
+                    if (affectedRows == 0)
+                    {
+                        conn.rollback();
+                        return false;
+                    }
+
+                    try (ResultSet rs = pstmt.getGeneratedKeys())
+                    {
+                        if (rs.next())
+                        {
+                            tweetId = rs.getInt(1);
+                        }
+                        else
+                        {
+                            conn.rollback();
+                            return false;
+                        }
+                    }
+                }
+
+                if (!imagePath.isEmpty())
+                {
+                    try (PreparedStatement pstmt = conn.prepareStatement(mediaSql))
+                    {
+                        pstmt.setInt(1, tweetId);
+                        pstmt.setString(2, imagePath);
+                        pstmt.executeUpdate();
+                    }
+                }
+
+                conn.commit();
+                return true;
+            }
+            catch (SQLException e)
+            {
+                conn.rollback();
+                System.err.println("Error creating tweet: " + e.getMessage());
+                return false;
+            }
+            finally
+            {
+                conn.setAutoCommit(true);
+            }
         }
         catch (SQLException e)
         {
-            System.err.println("Error creating tweet: " + e.getMessage());
+            System.err.println("Database connection error: " + e.getMessage());
             return false;
         }
     }
@@ -265,23 +315,41 @@ public class DatabaseManager
         return 0;
     }
 
-    public static java.util.List<String> getUserTweets(String username)
+    public static org.json.JSONArray getUserTweets(String username)
     {
-        java.util.List<String> tweets = new java.util.ArrayList<>();
-        int userId = getUserIdByUsername(username);
-        if (userId == -1) return tweets;
+        org.json.JSONArray tweets = new org.json.JSONArray();
 
-        String sql = "SELECT content FROM tweets WHERE user_id = ? ORDER BY created_at DESC";
+        int userId = getUserIdByUsername(username);
+        if (userId == -1)
+            return tweets;
+
+        String sql =
+                "SELECT t.content, m.media_path " +
+                        "FROM tweets t " +
+                        "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
+                        "WHERE t.user_id = ? " +
+                        "ORDER BY t.created_at DESC";
+
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-
             pstmt.setInt(1, userId);
+
             try (ResultSet rs = pstmt.executeQuery())
             {
                 while (rs.next())
                 {
-                    tweets.add(rs.getString("content"));
+                    JSONObject tweet = new JSONObject();
+
+                    tweet.put("content", rs.getString("content"));
+
+                    String imagePath = rs.getString("media_path");
+                    if (imagePath == null)
+                        imagePath = "";
+
+                    tweet.put("imagePath", imagePath);
+
+                    tweets.put(tweet);
                 }
             }
         }
@@ -289,7 +357,64 @@ public class DatabaseManager
         {
             System.err.println("Error retrieving user tweets: " + e.getMessage());
         }
+
         return tweets;
     }
+
+    public static JSONObject getFeedTweets()
+    {
+        JSONObject result = new JSONObject();
+        org.json.JSONArray tweets = new org.json.JSONArray();
+
+        String sql =
+                "SELECT u.username, " +
+                        "u.display_name, " +
+                        "u.avatar_path, " +
+                        "t.content, " +
+                        "t.created_at, " +
+                        "tm.media_path " +
+                        "FROM tweets t " +
+                        "JOIN users u ON t.user_id = u.id " +
+                        "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
+                        "ORDER BY t.created_at DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery())
+        {
+
+            while (rs.next())
+            {
+                JSONObject tweet = new JSONObject();
+
+                tweet.put("username", rs.getString("username"));
+                tweet.put("displayName", rs.getString("display_name"));
+                tweet.put("avatarPath", rs.getString("avatar_path"));
+                tweet.put("content", rs.getString("content"));
+                tweet.put("createdAt", rs.getTimestamp("created_at").toString());
+
+                String image = rs.getString("media_path");
+
+                if(image == null)
+                    image = "";
+
+                tweet.put("imagePath", image);
+
+                tweets.put(tweet);
+            }
+
+            result.put("success", true);
+            result.put("tweets", tweets);
+        }
+        catch (Exception e)
+        {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+
+        return result;
+    }
+
+
 }
 

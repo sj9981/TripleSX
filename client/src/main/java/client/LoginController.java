@@ -58,6 +58,8 @@ public class LoginController
                 statusLabel.setTextFill(javafx.scene.paint.Color.GREEN);
                 statusLabel.setText("Login successful! Welcome, " + username);
 
+                SessionManager.getInstance().setUsername(username);
+
                 try {
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("/home.fxml"));
                     Parent root = loader.load();

@@ -92,9 +92,10 @@ public class ProfileController
             {
                 for (int i = 0; i < tweets.length(); i++)
                 {
-                    addTweetToUI(tweets.optString(i, ""));
+                    addTweetToUI(tweets.getJSONObject(i));
                 }
             }
+
 
         }
         catch (Exception e)
@@ -244,14 +245,36 @@ public class ProfileController
         }
     }
 
-    private void addTweetToUI(String content)
-    {
-        Label tweetLabel = new Label(content);
-        tweetLabel.setStyle("-fx-padding: 10; -fx-border-color: #333; -fx-text-fill: white;");
-        tweetLabel.setWrapText(true);
-        tweetLabel.setMaxWidth(Double.MAX_VALUE);
-        userTweetsContainer.getChildren().add(tweetLabel);
+    private void addTweetToUI(JSONObject tweetJson) {
+        String content = tweetJson.optString("content", "");
+        String imagePath = tweetJson.optString("imagePath", "");
+
+        VBox tweetBox = new VBox();
+        tweetBox.setStyle("-fx-padding: 10; -fx-border-color: #333; -fx-border-width: 0 0 1 0;");
+
+        Label contentLabel = new Label(content);
+        contentLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+        contentLabel.setWrapText(true);
+        tweetBox.getChildren().add(contentLabel);
+
+        if (!imagePath.isEmpty()) {
+            try {
+                File file = new File(imagePath);
+                if (file.exists()) {
+                    Image image = new Image(file.toURI().toString());
+                    ImageView imageView = new ImageView(image);
+                    imageView.setFitWidth(300);
+                    imageView.setPreserveRatio(true);
+                    tweetBox.getChildren().add(imageView);
+                }
+            } catch (Exception e) {
+                System.out.println("Could not load image in profile: " + imagePath);
+            }
+        }
+
+        userTweetsContainer.getChildren().add(tweetBox);
     }
+
 
     @FXML
     private void handleBack()
@@ -303,4 +326,3 @@ public class ProfileController
         }
     }
 }
-

@@ -139,5 +139,37 @@ public class NetworkManager
         }
         return new JSONObject(responseStr);
     }
+    public JSONObject createTweet(String username, String content, String imagePath)
+    {
+        JSONObject request = new JSONObject();
+        request.put("action", "create_tweet");
+        request.put("username", username);
+        request.put("content", content);
+        request.put("image_path", imagePath == null ? "" : imagePath);
+
+        String response = sendRequest(request.toString());
+        if (response == null || response.trim().isEmpty())
+        {
+            return null;
+        }
+
+        return new JSONObject(response);
+    }
+
+
+    public JSONObject getFeedTweets() {
+        JSONObject request = new JSONObject();
+        request.put("action", "get_feed_tweets");
+        request.put("username", client.SessionManager.getInstance().getUsername());
+
+        System.out.println("[CLIENT] Requesting feed for: " + client.SessionManager.getInstance().getUsername());
+        String response = sendRequest(request.toString());
+
+        if (response == null || response.trim().isEmpty()) {
+            return new JSONObject().put("success", false).put("message", "Empty response");
+        }
+        return new JSONObject(response);
+    }
+
 }
 

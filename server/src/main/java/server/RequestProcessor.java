@@ -38,6 +38,9 @@ public class RequestProcessor
                 case "get_profile":
                     response = handleGetProfile(request);
                     break;
+                case "get_feed_tweets":
+                    response = handleGetFeedTweets(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
@@ -54,7 +57,8 @@ public class RequestProcessor
     private JSONObject handleRegister(JSONObject request)
     {
         JSONObject res = new JSONObject();
-        try {
+        try
+        {
             String username = request.optString("username", "").trim();
             String email = request.optString("email", "").trim();
             String password = request.optString("password", "").trim();
@@ -115,8 +119,9 @@ public class RequestProcessor
         {
             String username = request.getString("username");
             String content = request.getString("content");
+            String imagePath = request.optString("image_path", "").trim();
 
-            boolean success = DatabaseManager.createTweet(username, content);
+            boolean success = DatabaseManager.createTweet(username, content, imagePath);
             res.put("success", success);
             res.put("message", success ? "Tweet published!" : "Failed to publish tweet.");
         }
@@ -207,13 +212,7 @@ public class RequestProcessor
             userProfileJson.put("followingCount", followingCount);
             res.put("user", userProfileJson);
 
-            org.json.JSONArray tweetsArray = new org.json.JSONArray();
-            java.util.List<String> userTweets = DatabaseManager.getUserTweets(username);
-            for (String tweetContent : userTweets)
-            {
-                tweetsArray.put(tweetContent);
-            }
-            res.put("tweets", tweetsArray);
+            res.put("tweets", DatabaseManager.getUserTweets(username));
 
         }
         catch (org.json.JSONException e)
@@ -228,5 +227,42 @@ public class RequestProcessor
         }
         return res;
     }
+
+    private JSONObject handleGetFeedTweets()
+    {
+        JSONObject res = new JSONObject();
+
+        try
+        {
+            res = DatabaseManager.getFeedTweets();
+        }
+        catch (Exception e)
+        {
+            res.put("success", false);
+            res.put("message", e.getMessage());
+        }
+
+        return res;
+    }
+
+
+    private JSONObject handleGetFeedTweets(JSONObject request)
+    {
+        String username = request.optString("username", "guest");
+
+        JSONObject res = new JSONObject();
+        try
+        {
+            res = DatabaseManager.getFeedTweets();
+        }
+        catch (Exception e)
+        {
+            res.put("success", false);
+            res.put("message", "Error loading feed: " + e.getMessage());
+        }
+        return res;
+    }
+
+
 }
 
