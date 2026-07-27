@@ -62,4 +62,5 @@ CREATE TABLE IF NOT EXISTS follows (
 
     CHECK (follower_id <> following_id)
     );
-
+ALTER TABLE tweets
+    ADD COLUMN image_path TEXT;

@@ -37,6 +37,15 @@
     -fx-padding: 5 20;
     -fx-cursor: hand;
 }
+
+.image-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #536471;
+    -fx-border-radius: 20;
+    -fx-text-fill: #536471;
+    -fx-cursor: hand;
+}
+
 .post-button:hover {
     -fx-background-color: #1a8cd8;
 }

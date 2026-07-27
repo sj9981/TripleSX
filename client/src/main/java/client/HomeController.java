@@ -2,17 +2,18 @@ package client;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.*;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -21,34 +22,110 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import javafx.stage.FileChooser;
+import java.io.File;
+
 public class HomeController
 {
     @FXML private TextArea tweetTextArea;
     @FXML private VBox feedContainer;
 
     private String username;
+    private String selectedImagePath = "";
+    @FXML
+    private VBox homeTweetsContainer;
+
 
     private final Map<String, Image> avatarCache = new HashMap<>();
 
     public void setUsername(String username)
     {
         this.username = username;
+        loadTweetsFromServer();
     }
 
     public void setUserInfo(String username)
     {
         this.username = username;
         System.out.println("Logged in user set to: " + username);
+        loadTweetsFromServer();
+    }
+
+    @FXML
+    public void initialize()
+    {
     }
 
     @FXML
     private void handlePostTweet()
     {
         String tweetText = tweetTextArea.getText().trim();
-        if (tweetText.isEmpty()) return;
+        String currentUser = SessionManager.getInstance().getUsername();
 
-        addTweetToFeed(username, tweetText);
-        tweetTextArea.clear();
+        System.out.println("Current user in HomeController: " + currentUser);
+        System.out.println("Selected image path: " + selectedImagePath);
+
+        if (currentUser == null || currentUser.trim().isEmpty())
+        {
+            System.err.println("Username is null. Cannot post tweet.");
+            return;
+        }
+
+        if (tweetText.isEmpty() && selectedImagePath.isEmpty())
+        {
+            System.out.println("Nothing to post.");
+            return;
+        }
+
+        JSONObject response = NetworkManager.getInstance()
+                .createTweet(currentUser, tweetText, selectedImagePath);
+
+        System.out.println("Create tweet response: " + response);
+
+        if (response != null && response.optBoolean("success", false))
+        {
+            tweetTextArea.clear();
+            selectedImagePath = "";
+            loadTweetsFromServer();
+        }
+        else
+        {
+            System.err.println("Failed to post tweet: " +
+                    (response != null ? response.optString("message") : "null response"));
+        }
+    }
+
+    private void loadTweetsFromServer() {
+        String currentUser = SessionManager.getInstance().getUsername();
+        if (currentUser == null || currentUser.trim().isEmpty()) {
+            System.out.println("Username not set yet, skipping tweet load.");
+            return;
+        }
+
+        try {
+            JSONObject response = NetworkManager.getInstance().getFeedTweets();
+
+            if (response != null && response.optBoolean("success", false)) {
+                feedContainer.getChildren().clear();
+
+                JSONArray tweets = response.optJSONArray("tweets");
+                if (tweets == null) return;
+
+                for (int i = 0; i < tweets.length(); i++) {
+                    JSONObject tweetObj = tweets.getJSONObject(i);
+                    addTweetToFeed(
+                            tweetObj.optString("username", "Unknown"),
+                            tweetObj.optString("content", ""),
+                            tweetObj.optString("created_at", "")
+                    );
+                }
+            } else {
+                System.err.println("Failed to load tweets: " +
+                        (response != null ? response.optString("message") : "null response"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private Image getUserAvatar(String user)
@@ -107,9 +184,7 @@ public class HomeController
                     return img;
                 }
             }
-        } catch (Exception ignored)
-        {
-        }
+        } catch (Exception ignored) {}
 
         try
         {
@@ -123,8 +198,7 @@ public class HomeController
                     return img;
                 }
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
 
         try
         {
@@ -138,9 +212,7 @@ public class HomeController
                     return img;
                 }
             }
-        } catch (Exception ignored)
-        {
-        }
+        } catch (Exception ignored) {}
 
         return loadDefaultAvatar();
     }
@@ -162,7 +234,7 @@ public class HomeController
         return null;
     }
 
-    private void addTweetToFeed(String user, String text)
+    private void addTweetToFeed(String user, String text, String createdAt)
     {
         VBox card = new VBox(5);
         card.getStyleClass().add("tweet-card");
@@ -197,8 +269,11 @@ public class HomeController
         contentLabel.getStyleClass().add("content-label");
         contentLabel.setWrapText(true);
 
-        card.getChildren().addAll(header, contentLabel);
-        feedContainer.getChildren().add(0, card);
+        Label timeLabel = new Label(createdAt);
+        timeLabel.getStyleClass().add("time-label");
+
+        card.getChildren().addAll(header, contentLabel, timeLabel);
+        feedContainer.getChildren().add(card);
     }
 
     @FXML
@@ -243,5 +318,51 @@ public class HomeController
             e.printStackTrace();
         }
     }
-}
 
+    @FXML
+    private void handleChooseImage()
+    {
+        FileChooser chooser = new FileChooser();
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg")
+        );
+
+        File file = chooser.showOpenDialog(feedContainer.getScene().getWindow());
+        if (file != null)
+        {
+            selectedImagePath = file.getAbsolutePath();
+            System.out.println("Selected image: " + selectedImagePath);
+        }
+    }
+
+    private void addTweetToUI(JSONObject tweetJson) {
+        VBox tweetBox = new VBox(10);
+        tweetBox.setStyle("-fx-padding: 15; -fx-border-color: #444; -fx-border-width: 0 0 1 0;");
+
+        Label contentLabel = new Label(tweetJson.optString("content", ""));
+        contentLabel.setWrapText(true);
+        contentLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+        tweetBox.getChildren().add(contentLabel);
+
+        String imagePath = tweetJson.optString("imagePath", "");
+        if (imagePath != null && !imagePath.isEmpty() && !imagePath.equals("null")) {
+            try {
+                File imageFile = new File(imagePath);
+                if (imageFile.exists()) {
+                    Image image = new Image(imageFile.toURI().toString());
+                    ImageView imageView = new ImageView(image);
+
+                    imageView.setFitWidth(300);
+                    imageView.setPreserveRatio(true);
+
+                    tweetBox.getChildren().add(imageView);
+                }
+            } catch (Exception e) {
+                System.err.println("خطا در بارگذاری تصویر در فید: " + e.getMessage());
+            }
+        }
+
+        homeTweetsContainer.getChildren().add(tweetBox);
+    }
+
+}
