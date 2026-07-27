@@ -48,12 +48,17 @@ public class RequestProcessor {
                 case "get_feed_tweets":
                     response = handleGetFeedTweets(request);
                     break;
+                case "update_profile":
+                    response = handleUpdateProfile(request);
+                    break;
+                case "search":
+                    response = handleSearch(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
             }
 
-            // مهم: requestId باید به response برگردد
             if (request.has("requestId")) {
                 response.put("requestId", request.getString("requestId"));
             }
@@ -266,4 +271,33 @@ public class RequestProcessor {
         return res;
     }
 
+    private JSONObject handleUpdateProfile(JSONObject request) {
+        JSONObject res = new JSONObject();
+        try {
+            String oldUsername = request.getString("old_username");
+            String newName = request.getString("display_name");
+            String newUsername = request.getString("new_username");
+            String newBio = request.getString("bio");
+            String avatarPath = request.optString("avatar_path", "");
+
+            boolean success = DatabaseManager.updateProfile(oldUsername, newName, newUsername, newBio, avatarPath);
+            res.put("success", success);
+            res.put("message", success ? "Profile updated successfully." : "Profile update failed.");
+        } catch (Exception e) {
+            res.put("success", false);
+            res.put("message", "Server error during profile update: " + e.getMessage());
+        }
+        return res;
+    }
+    private JSONObject handleSearch(JSONObject request) {
+        JSONObject res = new JSONObject();
+        try {
+            String query = request.optString("query", "").trim();
+            res = DatabaseManager.search(query);
+        } catch (Exception e) {
+            res.put("success", false);
+            res.put("message", "Error in search handler: " + e.getMessage());
+        }
+        return res;
+    }
 }

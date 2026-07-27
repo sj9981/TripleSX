@@ -25,8 +25,7 @@
 
         <Region prefHeight="20"/>
         <Button text="  🏠" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
-        <Button text="  🔎" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
-        <Button text="  🔔" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  🔎" onAction="#handleGoToSearch" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>        <Button text="  🔔" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
         <Button text="  💬" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
         <Button text="  👤" onAction="#handleGoToProfile" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
 
@@ -88,3 +87,4 @@
     </VBox>
 
 </HBox>
+

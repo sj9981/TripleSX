@@ -141,6 +141,17 @@ public class NetworkManager
         return sendRequestObject(request);
     }
 
+    public JSONObject updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath) {
+        JSONObject request = new JSONObject();
+        request.put("action", "update_profile");
+        request.put("old_username", oldUsername);
+        request.put("display_name", newName);
+        request.put("new_username", newUsername);
+        request.put("bio", newBio);
+        request.put("avatar_path", avatarPath == null ? "" : avatarPath);
+        return sendRequestObject(request);
+    }
+
     public synchronized String sendRequest(String jsonRequest)
     {
         try
@@ -288,5 +299,11 @@ public class NetworkManager
         error.put("success", false);
         error.put("message", message);
         return error;
+    }
+    public JSONObject search(String query) {
+        JSONObject request = new JSONObject();
+        request.put("action", "search");
+        request.put("query", query);
+        return sendRequestObject(request);
     }
 }

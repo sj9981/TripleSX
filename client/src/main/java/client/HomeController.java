@@ -326,5 +326,23 @@ public class HomeController {
             System.out.println("Selected image: " + selectedImagePath);
         }
     }
+    @FXML
+    private void handleGoToSearch() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/search.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) feedContainer.getScene().getWindow();
+            double width = feedContainer.getScene().getWidth();
+            double height = feedContainer.getScene().getHeight();
+
+            stage.setScene(new Scene(root, width, height));
+            stage.setTitle("X Clone - Search");
+            stage.show();
+        } catch (IOException e) {
+            System.err.println("Could not load Search page: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
 

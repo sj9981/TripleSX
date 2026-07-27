@@ -1,18 +1,15 @@
 package server;
 
 import java.sql.*;
-
 import org.json.JSONObject;
+import org.json.JSONArray;
 import org.mindrot.jbcrypt.BCrypt;
-
-import static org.postgresql.PGProperty.PASSWORD;
 
 public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "Sa123456*";
-
+    private static final String PASSWORD = "12345";
 
     public static Connection getConnection() throws SQLException
     {
@@ -43,7 +40,6 @@ public class DatabaseManager
         public String getBannerPath() { return bannerPath; }
     }
 
-
     public static UserProfile getUserProfile(String username)
     {
         String sql = "SELECT username, display_name, bio, avatar_path, banner_path FROM users WHERE username = ?";
@@ -51,7 +47,6 @@ public class DatabaseManager
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-
             pstmt.setString(1, username);
 
             try (ResultSet rs = pstmt.executeQuery())
@@ -78,7 +73,6 @@ public class DatabaseManager
     public static boolean registerUser(String username, String email, String rawPassword,
                                        String displayName, String bio, String avatarPath, String bannerPath)
     {
-
         String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
         String sql = "INSERT INTO users (username, email, password_hash, display_name, bio, avatar_path, banner_path) " +
@@ -273,7 +267,6 @@ public class DatabaseManager
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-
             pstmt.setInt(1, userId);
 
             try (ResultSet rs = pstmt.executeQuery())
@@ -297,7 +290,6 @@ public class DatabaseManager
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-
             pstmt.setInt(1, userId);
 
             try (ResultSet rs = pstmt.executeQuery())
@@ -315,9 +307,9 @@ public class DatabaseManager
         return 0;
     }
 
-    public static org.json.JSONArray getUserTweets(String username)
+    public static JSONArray getUserTweets(String username)
     {
-        org.json.JSONArray tweets = new org.json.JSONArray();
+        JSONArray tweets = new JSONArray();
 
         int userId = getUserIdByUsername(username);
         if (userId == -1)
@@ -340,7 +332,6 @@ public class DatabaseManager
                 while (rs.next())
                 {
                     JSONObject tweet = new JSONObject();
-
                     tweet.put("content", rs.getString("content"));
 
                     String imagePath = rs.getString("media_path");
@@ -348,7 +339,6 @@ public class DatabaseManager
                         imagePath = "";
 
                     tweet.put("imagePath", imagePath);
-
                     tweets.put(tweet);
                 }
             }
@@ -364,7 +354,7 @@ public class DatabaseManager
     public static JSONObject getFeedTweets(String username)
     {
         JSONObject result = new JSONObject();
-        org.json.JSONArray tweets = new org.json.JSONArray();
+        JSONArray tweets = new JSONArray();
 
         String sql =
                 "SELECT u.username, " +
@@ -408,7 +398,6 @@ public class DatabaseManager
                     }
 
                     tweet.put("image_path", image);
-
                     tweets.put(tweet);
                 }
             }
@@ -446,7 +435,105 @@ public class DatabaseManager
         return followers;
     }
 
+    public static boolean updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath)
+    {
+        String sql = "UPDATE users SET display_name = ?, username = ?, bio = ?, avatar_path = ? WHERE username = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql))
+        {
+            ps.setString(1, newName);
+            ps.setString(2, newUsername);
+            ps.setString(3, newBio);
+
+            if (avatarPath == null || avatarPath.trim().isEmpty())
+            {
+                ps.setNull(4, java.sql.Types.VARCHAR);
+            }
+            else
+            {
+                ps.setString(4, avatarPath);
+            }
+
+            ps.setString(5, oldUsername);
+
+            return ps.executeUpdate() > 0;
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Database Error during profile update: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static JSONObject search(String query)
+    {
+        JSONObject result = new JSONObject();
+        JSONArray users = new JSONArray();
+        JSONArray tweets = new JSONArray();
+
+        String searchQuery = "%" + query + "%";
+
+        String userSql = "SELECT username, display_name, bio, avatar_path FROM users " +
+                         "WHERE username ILIKE ? OR display_name ILIKE ?";
+
+        String tweetSql = "SELECT u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path " +
+                          "FROM tweets t " +
+                          "JOIN users u ON t.user_id = u.id " +
+                          "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
+                          "WHERE t.content ILIKE ? " +
+                          "ORDER BY t.created_at DESC";
+
+        try (Connection conn = getConnection())
+        {
+
+            try (PreparedStatement pstmt = conn.prepareStatement(userSql))
+            {
+                pstmt.setString(1, searchQuery);
+                pstmt.setString(2, searchQuery);
+                try (ResultSet rs = pstmt.executeQuery())
+                {
+                    while (rs.next())
+                    {
+                        JSONObject user = new JSONObject();
+                        user.put("username", rs.getString("username"));
+                        user.put("displayName", rs.getString("display_name"));
+                        user.put("bio", rs.getString("bio") != null ? rs.getString("bio") : "");
+                        user.put("avatarPath", rs.getString("avatar_path") != null ? rs.getString("avatar_path") : "");
+                        users.put(user);
+                    }
+                }
+            }
 
 
+            try (PreparedStatement pstmt = conn.prepareStatement(tweetSql))
+            {
+                pstmt.setString(1, searchQuery);
+                try (ResultSet rs = pstmt.executeQuery())
+                {
+                    while (rs.next())
+                    {
+                        JSONObject tweet = new JSONObject();
+                        tweet.put("username", rs.getString("username"));
+                        tweet.put("display_name", rs.getString("display_name"));
+                        tweet.put("avatar_path", rs.getString("avatar_path") != null ? rs.getString("avatar_path") : "");
+                        tweet.put("content", rs.getString("content"));
+                        tweet.put("created_at", rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toString() : "");
+                        tweet.put("image_path", rs.getString("media_path") != null ? rs.getString("media_path") : "");
+                        tweets.put(tweet);
+                    }
+                }
+            }
+
+            result.put("success", true);
+            result.put("users", users);
+            result.put("tweets", tweets);
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Database error during search: " + e.getMessage());
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
 }
-
