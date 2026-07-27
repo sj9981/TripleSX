@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -22,7 +23,7 @@ import java.io.InputStream;
 
 public class ProfileController
 {
-
+    @FXML private Button editProfileButton;
     @FXML private ImageView avatarImageView;
     @FXML private Label displayNameLabel;
     @FXML private Label usernameLabel;
@@ -57,6 +58,15 @@ public class ProfileController
         setupAvatarView();
         setDefaultAvatar();
         loadProfileData();
+
+        String loggedInUser = SessionManager.getInstance().getUsername();
+        if (loggedInUser != null && loggedInUser.equalsIgnoreCase(username)) {
+            editProfileButton.setVisible(true);
+            editProfileButton.setManaged(true);
+        } else {
+            editProfileButton.setVisible(false);
+            editProfileButton.setManaged(false);
+        }
     }
 
     private void loadProfileData()
@@ -285,7 +295,8 @@ public class ProfileController
             Parent root = loader.load();
 
             HomeController homeController = loader.getController();
-            homeController.setUserInfo(currentUsername);
+            // FIX: Restore Home feed context using the actual logged-in user's username
+            homeController.setUserInfo(SessionManager.getInstance().getUsername());
 
             Stage stage = (Stage) displayNameLabel.getScene().getWindow();
             double width = displayNameLabel.getScene().getWidth();

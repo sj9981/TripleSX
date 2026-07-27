@@ -291,13 +291,13 @@ public class HomeController {
     }
 
     @FXML
-    private void handleGoToProfile() {
+     private void handleGoToProfile() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/profile.fxml"));
             Parent root = loader.load();
 
             ProfileController profileController = loader.getController();
-            profileController.initUserData(this.username);
+            profileController.initUserData(SessionManager.getInstance().getUsername());
 
             Stage stage = (Stage) feedContainer.getScene().getWindow();
 
