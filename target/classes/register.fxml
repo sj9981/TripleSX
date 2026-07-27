@@ -21,20 +21,25 @@
             <Insets top="30.0" right="30.0" bottom="30.0" left="30.0"/>
         </padding>
 
+        <!-- Logo -->
+        <HBox alignment="CENTER">
+            <Label text="𝕏" styleClass="auth-logo"/>
+        </HBox>
+
         <Label text="Create account" styleClass="auth-title"/>
         <Label text="Join the platform" styleClass="auth-subtitle"/>
 
         <VBox spacing="8.0">
             <Label text="Username" styleClass="auth-label"/>
             <TextField fx:id="usernameField"
-                       promptText="Choose a username"
+                       promptText="👤 Choose a username"
                        styleClass="auth-field"/>
         </VBox>
 
         <VBox spacing="8.0">
             <Label text="Email" styleClass="auth-label"/>
             <TextField fx:id="emailField"
-                       promptText="Enter your email"
+                       promptText="📧 Enter your email"
                        styleClass="auth-field"/>
         </VBox>
 
@@ -44,18 +49,18 @@
             <HBox spacing="8.0" alignment="CENTER_LEFT">
                 <StackPane HBox.hgrow="ALWAYS">
                     <PasswordField fx:id="passwordField"
-                                   promptText="Create a password"
+                                   promptText="🔒 Create a password"
                                    styleClass="auth-password"/>
 
                     <TextField fx:id="passwordVisibleField"
-                               promptText="Create a password"
+                               promptText="🔒 Create a password"
                                visible="false"
                                managed="false"
                                styleClass="auth-password"/>
                 </StackPane>
 
                 <Button fx:id="togglePasswordButton"
-                        text="🙉"
+                        text="👁"
                         onAction="#togglePasswordVisibility"
                         styleClass="eye-button"/>
             </HBox>

@@ -37,6 +37,15 @@
     -fx-padding: 5 20;
     -fx-cursor: hand;
 }
+
+.image-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #536471;
+    -fx-border-radius: 20;
+    -fx-text-fill: #536471;
+    -fx-cursor: hand;
+}
+
 .post-button:hover {
     -fx-background-color: #1a8cd8;
 }
@@ -142,26 +151,32 @@
     -fx-underline: true;
 }
 
-.eye-button {
-    -fx-background-color: #202327;
-    -fx-text-fill: #e7e9ea;
-    -fx-font-size: 15px;
-    -fx-background-radius: 10;
-    -fx-border-color: #2f3336;
-    -fx-border-radius: 10;
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10 20;
+    -fx-background-radius: 30;
     -fx-cursor: hand;
-    -fx-min-width: 44px;
-    -fx-min-height: 44px;
-    -fx-max-width: 44px;
-    -fx-max-height: 44px;
-    -fx-padding: 0;
+    -fx-pref-width: 210px;
 }
 
-.eye-button:hover {
-    -fx-background-color: #2f3336;
-    -fx-border-color: #1d9bf0;
+.logout-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10 20;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+    -fx-pref-width: 210px;
 }
 
-.eye-button:focused {
-    -fx-border-color: #1d9bf0;
+.auth-logo{
+    -fx-font-size: 42px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
 }

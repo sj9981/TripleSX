@@ -9,7 +9,7 @@
       stylesheets="@style.css"
       xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="client.HomeController">
+      fx:controller="client.SearchController">
 
     <VBox prefWidth="250.0" spacing="10"
           style="-fx-border-color: #2f3336; -fx-border-width: 0 1 0 0; -fx-background-color: #000000;">
@@ -24,8 +24,9 @@
               -fx-padding: 0 0 20 10;"/>
 
         <Region prefHeight="20"/>
-        <Button text="  🏠" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
-        <Button text="  🔎" onAction="#handleGoToSearch" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>        <Button text="  🔔" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  🏠" onAction="#handleGoToHome" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  🔎" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity" style="-fx-background-color: #181818;"/>
+        <Button text="  🔔" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
         <Button text="  💬" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
         <Button text="  👤" onAction="#handleGoToProfile" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
 
@@ -39,37 +40,40 @@
                 HBox.hgrow="ALWAYS"
                 style="-fx-background-color: black; -fx-background: black; -fx-border-color: transparent;">
         <content>
-            <VBox spacing="0" maxWidth="650.0">
+            <VBox spacing="15" maxWidth="650.0">
                 <padding>
-                    <Insets top="0" left="0" right="0" bottom="0"/>
+                    <Insets top="15" left="15" right="15" bottom="15"/>
                 </padding>
 
-                <Label text="Home"
-                       style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 15;"/>
+                <Label text="Search"
+                       style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
 
-                <VBox spacing="10"
-                      style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;">
-                    <HBox spacing="10">
-                        <Circle radius="20" fill="#333"/>
-                        <TextArea fx:id="tweetTextArea"
-                                  prefHeight="80"
-                                  promptText="What's happening?"
-                                  styleClass="tweet-box"
-                                  wrapText="true"
-                                  HBox.hgrow="ALWAYS"/>
-                    </HBox>
-                    <HBox alignment="CENTER_RIGHT" spacing="10">
-                        <Button text="+📸" onAction="#handleChooseImage" styleClass="image-button" />
-                    </HBox>
-                    <HBox alignment="CENTER_RIGHT" spacing="10">
-                        <Button text="Post" onAction="#handlePostTweet" styleClass="post-button"/>
-                    </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="searchField"
+                               promptText="🔍 Search users or tweets..."
+                               styleClass="auth-field"
+                               HBox.hgrow="ALWAYS"
+                               onAction="#handleSearch"/>
+                    <Button text="Search"
+                            onAction="#handleSearch"
+                            styleClass="post-button"/>
+                </HBox>
+
+                <VBox spacing="10">
+                    <Label text="Users" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                    <VBox fx:id="usersContainer" spacing="10" />
                 </VBox>
 
-                <VBox fx:id="feedContainer"/>
+                <Separator style="-fx-background-color: #2f3336; -fx-opacity: 0.3;"/>
+
+                <VBox spacing="10">
+                    <Label text="Tweets" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                    <VBox fx:id="tweetsContainer" spacing="10" />
+                </VBox>
             </VBox>
         </content>
     </ScrollPane>
+
 
     <VBox prefWidth="300.0" spacing="15"
           style="-fx-border-color: #2f3336; -fx-border-width: 0 0 0 1; -fx-background-color: #000000;">
@@ -87,4 +91,3 @@
     </VBox>
 
 </HBox>
-

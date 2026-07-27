@@ -13,20 +13,22 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
-public class LoginController
-{
-    @FXML private TextField usernameField;
-    @FXML private PasswordField passwordField;
-    @FXML private Label statusLabel;
+public class LoginController {
+    @FXML
+    private TextField usernameField;
 
     @FXML
-    public void handleLogin()
-    {
+    private PasswordField passwordField;
+
+    @FXML
+    private Label statusLabel;
+
+    @FXML
+    public void handleLogin() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        if (username.isEmpty() || password.isEmpty())
-        {
+        if (username.isEmpty() || password.isEmpty()) {
             statusLabel.setTextFill(javafx.scene.paint.Color.RED);
             statusLabel.setText("Please fill in all fields.");
             return;
@@ -37,14 +39,14 @@ public class LoginController
 
         Task<JSONObject> loginTask = new Task<>() {
             @Override
-            protected JSONObject call() throws Exception
-            {
+            protected JSONObject call() {
                 return NetworkManager.getInstance().login(username, password);
             }
         };
 
         loginTask.setOnSucceeded(e -> {
             JSONObject response = loginTask.getValue();
+
             if (response == null) {
                 statusLabel.setTextFill(javafx.scene.paint.Color.RED);
                 statusLabel.setText("No response from server.");
@@ -57,6 +59,8 @@ public class LoginController
             if (success) {
                 statusLabel.setTextFill(javafx.scene.paint.Color.GREEN);
                 statusLabel.setText("Login successful! Welcome, " + username);
+
+                SessionManager.getInstance().setUsername(username);
 
                 try {
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("/home.fxml"));
@@ -75,9 +79,7 @@ public class LoginController
                     statusLabel.setTextFill(javafx.scene.paint.Color.RED);
                     statusLabel.setText("Error loading Home screen. Check console.");
                 }
-            }
-            else
-            {
+            } else {
                 statusLabel.setTextFill(javafx.scene.paint.Color.RED);
                 statusLabel.setText(message);
             }
@@ -91,21 +93,20 @@ public class LoginController
             }
         });
 
-        new Thread(loginTask).start();
+        Thread thread = new Thread(loginTask);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @FXML
-    private void handleRegister()
-    {
-        try
-        {
+    private void handleRegister() {
+        try {
             Parent root = FXMLLoader.load(getClass().getResource("/register.fxml"));
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.setTitle("X Clone - Sign Up");
-        }
-        catch (Exception e)
-        {
+            stage.show();
+        } catch (Exception e) {
             e.printStackTrace();
             statusLabel.setText("Error loading registration page.");
         }

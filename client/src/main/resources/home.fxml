@@ -17,17 +17,20 @@
             <Insets top="20" left="20" right="10" bottom="20"/>
         </padding>
 
-        <Circle radius="15" fill="#1d9bf0" />
+        <Label text="  𝕏"
+               style="-fx-text-fill: white;
+              -fx-font-size: 38px;
+              -fx-font-weight: bold;
+              -fx-padding: 0 0 20 10;"/>
 
         <Region prefHeight="20"/>
-        <Button text="Home" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Explore" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Notifications" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Messages" styleClass="sidebar-button" maxWidth="Infinity"/>
-        <Button text="Profile" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="  🏠" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  🔎" onAction="#handleGoToSearch" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>        <Button text="  🔔" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  💬" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button text="  👤" onAction="#handleGoToProfile" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
 
         <Region VBox.vgrow="ALWAYS"/>
-        <Button text="Logout" onAction="#handleLogout" styleClass="sidebar-button" maxWidth="Infinity"/>
+        <Button text="Logout" onAction="#handleLogout" styleClass="logout-button" maxWidth="Infinity"/>
     </VBox>
 
     <ScrollPane fitToWidth="true"
@@ -55,7 +58,10 @@
                                   wrapText="true"
                                   HBox.hgrow="ALWAYS"/>
                     </HBox>
-                    <HBox alignment="CENTER_RIGHT">
+                    <HBox alignment="CENTER_RIGHT" spacing="10">
+                        <Button text="+📸" onAction="#handleChooseImage" styleClass="image-button" />
+                    </HBox>
+                    <HBox alignment="CENTER_RIGHT" spacing="10">
                         <Button text="Post" onAction="#handlePostTweet" styleClass="post-button"/>
                     </HBox>
                 </VBox>
@@ -81,3 +87,4 @@
     </VBox>
 
 </HBox>
+

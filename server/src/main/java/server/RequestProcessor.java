@@ -2,24 +2,31 @@ package server;
 
 import org.json.JSONObject;
 
-public class RequestProcessor
-{
-    public String process(String jsonRequest)
-    {
+import java.time.LocalDateTime;
+import java.util.List;
+
+public class RequestProcessor {
+
+    public String process(String jsonRequest) {
         JSONObject response = new JSONObject();
-        try
-        {
+
+        try {
             JSONObject request = new JSONObject(jsonRequest);
-            if (!request.has("action"))
-            {
+
+            if (!request.has("action")) {
                 response.put("success", false);
                 response.put("message", "Missing 'action' field.");
+
+                if (request.has("requestId")) {
+                    response.put("requestId", request.getString("requestId"));
+                }
+
                 return response.toString();
             }
 
             String action = request.getString("action");
-            switch (action)
-            {
+
+            switch (action) {
                 case "register":
                     response = handleRegister(request);
                     break;
@@ -35,21 +42,38 @@ public class RequestProcessor
                 case "unfollow":
                     response = handleUnfollow(request);
                     break;
+                case "get_profile":
+                    response = handleGetProfile(request);
+                    break;
+                case "get_feed_tweets":
+                    response = handleGetFeedTweets(request);
+                    break;
+                case "update_profile":
+                    response = handleUpdateProfile(request);
+                    break;
+                case "search":
+                    response = handleSearch(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
             }
-        }
-        catch (Exception e)
-        {
+
+            if (request.has("requestId")) {
+                response.put("requestId", request.getString("requestId"));
+            }
+
+        } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Server error: " + e.getMessage());
         }
+
         return response.toString();
     }
 
     private JSONObject handleRegister(JSONObject request) {
         JSONObject res = new JSONObject();
+
         try {
             String username = request.optString("username", "").trim();
             String email = request.optString("email", "").trim();
@@ -72,64 +96,82 @@ public class RequestProcessor
 
             boolean success = DatabaseManager.registerUser(username, email, password, displayName, bio, avatar, banner);
             res.put("success", success);
-            res.put("message", success ? "Registration successful!" : "User already exists or registration failed.");
+            res.put("message", success
+                    ? "Registration successful!"
+                    : "User already exists or registration failed.");
+
         } catch (Exception e) {
             res.put("success", false);
             res.put("message", "Error: " + e.getMessage());
         }
+
         return res;
     }
 
-    private JSONObject handleLogin(JSONObject request)
-    {
+    private JSONObject handleLogin(JSONObject request) {
         JSONObject res = new JSONObject();
-        try
-        {
+
+        try {
             String username = request.getString("username");
             String password = request.getString("password");
 
             boolean success = DatabaseManager.loginUser(username, password);
             res.put("success", success);
             res.put("message", success ? "Login successful!" : "Invalid credentials.");
-        }
-        catch (Exception e)
-        {
+
+        } catch (Exception e) {
             res.put("success", false);
             res.put("message", "Error: " + e.getMessage());
         }
+
         return res;
     }
 
-    private JSONObject handleCreateTweet(JSONObject request)
-    {
+    private JSONObject handleCreateTweet(JSONObject request) {
         JSONObject res = new JSONObject();
-        try
-        {
+
+        try {
             String username = request.getString("username");
             String content = request.getString("content");
+            String imagePath = request.optString("image_path", "").trim();
 
-            boolean success = DatabaseManager.createTweet(username, content);
+            boolean success = DatabaseManager.createTweet(username, content, imagePath);
+
             res.put("success", success);
             res.put("message", success ? "Tweet published!" : "Failed to publish tweet.");
-        }
-        catch (Exception e)
-        {
+
+            if (success) {
+                List<String> followers = DatabaseManager.getFollowers(username);
+
+                JSONObject newTweetNotification = new JSONObject();
+                newTweetNotification.put("type", "NEW_TWEET");
+                newTweetNotification.put("username", username);
+                newTweetNotification.put("author", username);
+                newTweetNotification.put("content", content);
+                newTweetNotification.put("image_path", imagePath);
+                newTweetNotification.put("created_at", LocalDateTime.now().toString());
+
+                for (String follower : followers) {
+                    ConnectionManager.sendToClient(follower, newTweetNotification.toString());
+                }
+            }
+
+        } catch (Exception e) {
             res.put("success", false);
             res.put("message", "Invalid tweet data: " + e.getMessage());
         }
+
         return res;
     }
 
-    private JSONObject handleFollow(JSONObject request)
-    {
+    private JSONObject handleFollow(JSONObject request) {
         JSONObject res = new JSONObject();
-        try
-        {
+
+        try {
             String follower = request.getString("follower_username");
             String following = request.getString("following_username");
 
-            if (follower.equals(following))
-            {
+            if (follower.equals(following)) {
                 res.put("success", false);
                 res.put("message", "You cannot follow yourself.");
                 return res;
@@ -137,32 +179,124 @@ public class RequestProcessor
 
             boolean success = DatabaseManager.followUser(follower, following);
             res.put("success", success);
-            res.put("message", success ? "Successfully followed " + following : "Failed to follow user (User may not exist or already followed).");
-        }
-        catch (Exception e)
-        {
+            res.put("message", success
+                    ? "Successfully followed " + following
+                    : "Failed to follow user (User may not exist or already followed).");
+
+        } catch (Exception e) {
             res.put("success", false);
             res.put("message", "Error in follow request: " + e.getMessage());
         }
+
         return res;
     }
 
-    private JSONObject handleUnfollow(JSONObject request)
-    {
+    private JSONObject handleUnfollow(JSONObject request) {
         JSONObject res = new JSONObject();
-        try
-        {
+
+        try {
             String follower = request.getString("follower_username");
             String following = request.getString("following_username");
 
             boolean success = DatabaseManager.unfollowUser(follower, following);
             res.put("success", success);
-            res.put("message", success ? "Successfully unfollowed " + following : "Failed to unfollow user.");
-        }
-        catch (Exception e)
-        {
+            res.put("message", success
+                    ? "Successfully unfollowed " + following
+                    : "Failed to unfollow user.");
+
+        } catch (Exception e) {
             res.put("success", false);
             res.put("message", "Error in unfollow request: " + e.getMessage());
+        }
+
+        return res;
+    }
+
+    private JSONObject handleGetProfile(JSONObject request) {
+        JSONObject res = new JSONObject();
+
+        try {
+            String username = request.getString("username");
+
+            DatabaseManager.UserProfile userProfileData = DatabaseManager.getUserProfile(username);
+            if (userProfileData == null) {
+                res.put("success", false);
+                res.put("message", "User not found.");
+                return res;
+            }
+
+            int userId = DatabaseManager.getUserIdByUsername(username);
+            int followerCount = DatabaseManager.getFollowerCount(userId);
+            int followingCount = DatabaseManager.getFollowingCount(userId);
+
+            res.put("success", true);
+            res.put("message", "Profile data retrieved successfully.");
+
+            JSONObject userProfileJson = new JSONObject();
+            userProfileJson.put("username", userProfileData.getUsername());
+            userProfileJson.put("displayName", userProfileData.getDisplayName());
+            userProfileJson.put("bio", userProfileData.getBio());
+            userProfileJson.put("avatarPath", userProfileData.getAvatarPath());
+            userProfileJson.put("bannerPath", userProfileData.getBannerPath());
+            userProfileJson.put("followerCount", followerCount);
+            userProfileJson.put("followingCount", followingCount);
+
+            res.put("user", userProfileJson);
+            res.put("tweets", DatabaseManager.getUserTweets(username));
+
+        } catch (org.json.JSONException e) {
+            res.put("success", false);
+            res.put("message", "Invalid request format.");
+        } catch (Exception e) {
+            res.put("success", false);
+            res.put("message", "Internal server error: " + e.getMessage());
+        }
+
+        return res;
+    }
+
+    private JSONObject handleGetFeedTweets(JSONObject request) {
+        JSONObject res = new JSONObject();
+
+        try {
+            String username = request.getString("username");
+
+            res = DatabaseManager.getFeedTweets(username);
+
+        } catch (Exception e) {
+            res.put("success", false);
+            res.put("message", "Error loading feed: " + e.getMessage());
+        }
+
+        return res;
+    }
+
+    private JSONObject handleUpdateProfile(JSONObject request) {
+        JSONObject res = new JSONObject();
+        try {
+            String oldUsername = request.getString("old_username");
+            String newName = request.getString("display_name");
+            String newUsername = request.getString("new_username");
+            String newBio = request.getString("bio");
+            String avatarPath = request.optString("avatar_path", "");
+
+            boolean success = DatabaseManager.updateProfile(oldUsername, newName, newUsername, newBio, avatarPath);
+            res.put("success", success);
+            res.put("message", success ? "Profile updated successfully." : "Profile update failed.");
+        } catch (Exception e) {
+            res.put("success", false);
+            res.put("message", "Server error during profile update: " + e.getMessage());
+        }
+        return res;
+    }
+    private JSONObject handleSearch(JSONObject request) {
+        JSONObject res = new JSONObject();
+        try {
+            String query = request.optString("query", "").trim();
+            res = DatabaseManager.search(query);
+        } catch (Exception e) {
+            res.put("success", false);
+            res.put("message", "Error in search handler: " + e.getMessage());
         }
         return res;
     }
