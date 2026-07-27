@@ -361,7 +361,7 @@ public class DatabaseManager
         return tweets;
     }
 
-    public static JSONObject getFeedTweets()
+    public static JSONObject getFeedTweets(String username)
     {
         JSONObject result = new JSONObject();
         org.json.JSONArray tweets = new org.json.JSONArray();
@@ -376,31 +376,41 @@ public class DatabaseManager
                         "FROM tweets t " +
                         "JOIN users u ON t.user_id = u.id " +
                         "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
+                        "WHERE t.user_id = (SELECT id FROM users WHERE username = ?) " +
+                        "   OR t.user_id IN ( " +
+                        "       SELECT following_id " +
+                        "       FROM follows " +
+                        "       WHERE follower_id = (SELECT id FROM users WHERE username = ?) " +
+                        "   ) " +
                         "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery())
+             PreparedStatement ps = conn.prepareStatement(sql))
         {
+            ps.setString(1, username);
+            ps.setString(2, username);
 
-            while (rs.next())
+            try (ResultSet rs = ps.executeQuery())
             {
-                JSONObject tweet = new JSONObject();
+                while (rs.next())
+                {
+                    JSONObject tweet = new JSONObject();
 
-                tweet.put("username", rs.getString("username"));
-                tweet.put("displayName", rs.getString("display_name"));
-                tweet.put("avatarPath", rs.getString("avatar_path"));
-                tweet.put("content", rs.getString("content"));
-                tweet.put("createdAt", rs.getTimestamp("created_at").toString());
+                    tweet.put("username", rs.getString("username"));
+                    tweet.put("display_name", rs.getString("display_name"));
+                    tweet.put("avatar_path", rs.getString("avatar_path"));
+                    tweet.put("content", rs.getString("content"));
+                    tweet.put("created_at", rs.getTimestamp("created_at").toString());
 
-                String image = rs.getString("media_path");
+                    String image = rs.getString("media_path");
+                    if (image == null) {
+                        image = "";
+                    }
 
-                if(image == null)
-                    image = "";
+                    tweet.put("image_path", image);
 
-                tweet.put("imagePath", image);
-
-                tweets.put(tweet);
+                    tweets.put(tweet);
+                }
             }
 
             result.put("success", true);
@@ -414,6 +424,28 @@ public class DatabaseManager
 
         return result;
     }
+
+    public static java.util.List<String> getFollowers(String username)
+    {
+        java.util.List<String> followers = new java.util.ArrayList<>();
+        String sql = "SELECT u.username FROM users u " +
+                "JOIN follows f ON u.id = f.follower_id " +
+                "WHERE f.following_id = (SELECT id FROM users WHERE username = ?)";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    followers.add(rs.getString("username"));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting followers: " + e.getMessage());
+        }
+        return followers;
+    }
+
 
 
 }

@@ -14,7 +14,8 @@ import javafx.stage.Stage;
 import javafx.scene.input.MouseEvent;
 import org.json.JSONObject;
 
-public class RegisterController {
+public class RegisterController
+{
 
     @FXML private TextField usernameField;
     @FXML private TextField emailField;
@@ -26,12 +27,14 @@ public class RegisterController {
     private boolean passwordVisible = false;
 
     @FXML
-    private void handleSignUp() {
+    private void handleSignUp()
+    {
         String username = usernameField.getText().trim();
         String email = emailField.getText().trim();
         String password = passwordVisible ? passwordVisibleField.getText() : passwordField.getText();
 
-        if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
+        if (username.isEmpty() || email.isEmpty() || password.isEmpty())
+        {
             statusLabel.setTextFill(javafx.scene.paint.Color.RED);
             statusLabel.setText("All fields are required!");
             return;
@@ -40,9 +43,11 @@ public class RegisterController {
         statusLabel.setTextFill(javafx.scene.paint.Color.BLUE);
         statusLabel.setText("Registering your account...");
 
-        Task<JSONObject> registerTask = new Task<>() {
+        Task<JSONObject> registerTask = new Task<>()
+        {
             @Override
-            protected JSONObject call() throws Exception {
+            protected JSONObject call() throws Exception
+            {
                 return NetworkManager.getInstance().register(username, email, password);
             }
         };
@@ -57,13 +62,17 @@ public class RegisterController {
                 statusLabel.setText("Account created! Redirecting to login...");
 
                 new Thread(() -> {
-                    try {
+                    try
+                    {
                         Thread.sleep(2000);
-                    } catch (InterruptedException ignored) {
+                    }
+                    catch (InterruptedException ignored) {
                     }
                     Platform.runLater(this::goToLogin);
                 }).start();
-            } else {
+            }
+            else
+            {
                 statusLabel.setTextFill(javafx.scene.paint.Color.RED);
                 statusLabel.setText(message);
             }
@@ -79,17 +88,21 @@ public class RegisterController {
     }
 
     @FXML
-    private void togglePasswordVisibility() {
+    private void togglePasswordVisibility()
+    {
         passwordVisible = !passwordVisible;
 
-        if (passwordVisible) {
+        if (passwordVisible)
+        {
             passwordVisibleField.setText(passwordField.getText());
             passwordVisibleField.setVisible(true);
             passwordVisibleField.setManaged(true);
             passwordField.setVisible(false);
             passwordField.setManaged(false);
             togglePasswordButton.setText("🙈");
-        } else {
+        }
+        else
+        {
             passwordField.setText(passwordVisibleField.getText());
             passwordField.setVisible(true);
             passwordField.setManaged(true);
@@ -100,20 +113,23 @@ public class RegisterController {
     }
 
     @FXML
-    private void goToLogin() {
-        try {
+    private void goToLogin()
+    {
+        try
+        {
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.setTitle("X Clone - Login");
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     @FXML
-    private void goToLogin(MouseEvent event) {
+    private void goToLogin(MouseEvent event)
+    {
         goToLogin();
     }
 }
-
