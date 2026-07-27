@@ -11,7 +11,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "Sa123456*";
+    private static final String PASSWORD = "12345";
 
 
     public static Connection getConnection() throws SQLException
@@ -446,7 +446,33 @@ public class DatabaseManager
         return followers;
     }
 
+    public static boolean updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath)
+    {
+        String sql = "UPDATE users SET display_name = ?, username = ?, bio = ?, avatar_path = ? WHERE username = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql))
+        {
+            ps.setString(1, newName);
+            ps.setString(2, newUsername);
+            ps.setString(3, newBio);
 
+            if (avatarPath == null || avatarPath.trim().isEmpty())
+            {
+                ps.setNull(4, java.sql.Types.VARCHAR);
+            }
+            else
+            {
+                ps.setString(4, avatarPath);
+            }
 
+            ps.setString(5, oldUsername);
+
+            return ps.executeUpdate() > 0;
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Database Error during profile update: " + e.getMessage());
+            return false;
+        }
+    }
 }
-

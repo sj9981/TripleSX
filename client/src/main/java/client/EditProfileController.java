@@ -15,14 +15,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import server.DatabaseManager;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 public class EditProfileController {
 
@@ -43,7 +39,6 @@ public class EditProfileController {
 
     private String previousScene = "/profile.fxml";
     private String currentUsername;
-
 
     private String currentAvatarPath;
     private String selectedImagePath;
@@ -207,28 +202,10 @@ public class EditProfileController {
                                               String newUsername,
                                               String newBio,
                                               String avatarPath) {
-        String sql = "UPDATE users SET display_name = ?, username = ?, bio = ?, avatar_path = ? WHERE username = ?";
-
-        try (Connection connection = DatabaseManager.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-
-            ps.setString(1, newName);
-            ps.setString(2, newUsername);
-            ps.setString(3, newBio);
-
-            if (avatarPath == null || avatarPath.trim().isEmpty()) {
-                ps.setNull(4, java.sql.Types.VARCHAR);
-            } else {
-                ps.setString(4, avatarPath);
-            }
-
-            ps.setString(5, oldUsername);
-
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
+        JSONObject response = NetworkManager.getInstance().updateProfile(
+                oldUsername, newName, newUsername, newBio, avatarPath
+        );
+        return response != null && response.optBoolean("success", false);
     }
 
     private void loadAvatarFromDatabase() {
@@ -236,16 +213,12 @@ public class EditProfileController {
             return;
         }
 
-        String sql = "SELECT avatar_path FROM users WHERE username = ?";
-
-        try (Connection connection = DatabaseManager.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-
-            ps.setString(1, currentUsername);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    currentAvatarPath = rs.getString("avatar_path");
+        try {
+            JSONObject response = NetworkManager.getInstance().getUserProfile(currentUsername);
+            if (response != null && response.optBoolean("success", false)) {
+                JSONObject userObj = response.optJSONObject("user");
+                if (userObj != null) {
+                    currentAvatarPath = userObj.optString("avatarPath", null);
 
                     if (currentAvatarPath != null && !currentAvatarPath.trim().isEmpty()) {
                         File file = new File(currentAvatarPath);
@@ -263,9 +236,10 @@ public class EditProfileController {
                 } else {
                     showDefaultAvatar();
                 }
+            } else {
+                showDefaultAvatar();
             }
-
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             showDefaultAvatar();
         }
