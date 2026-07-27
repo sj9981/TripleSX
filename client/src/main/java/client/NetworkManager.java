@@ -306,4 +306,12 @@ public class NetworkManager
         request.put("query", query);
         return sendRequestObject(request);
     }
+
+    public JSONObject deleteTweet(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "delete_tweet");
+        request.put("tweet_id", tweetId);
+        request.put("username", SessionManager.getInstance().getUsername());
+        return sendRequestObject(request);
+    }
 }

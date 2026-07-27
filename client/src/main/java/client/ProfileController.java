@@ -9,6 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
@@ -256,30 +257,53 @@ public class ProfileController
     }
 
     private void addTweetToUI(JSONObject tweetJson) {
+        int tweetId = tweetJson.optInt("tweet_id");
         String content = tweetJson.optString("content", "");
         String imagePath = tweetJson.optString("imagePath", "");
 
-        VBox tweetBox = new VBox();
-        tweetBox.setStyle("-fx-padding: 10; -fx-border-color: #333; -fx-border-width: 0 0 1 0;");
+        VBox tweetBox = new VBox(10);
+        tweetBox.setStyle("-fx-padding: 15; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0;");
 
+        HBox topRow = new HBox();
         Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+        contentLabel.setStyle("-fx-text-fill: white; -fx-font-size: 15px;");
         contentLabel.setWrapText(true);
-        tweetBox.getChildren().add(contentLabel);
+
+        // Spacer
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+        topRow.getChildren().addAll(contentLabel, spacer);
+
+        // Show delete button only if you have access
+        String loggedInUser = SessionManager.getInstance().getUsername();
+        if (loggedInUser != null && loggedInUser.equalsIgnoreCase(currentUsername)) {
+            Button delBtn = new Button("🗑");
+            delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14;");
+            delBtn.setOnMouseEntered(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-cursor: hand; -fx-font-size: 14;"));
+            delBtn.setOnMouseExited(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14;"));
+
+            delBtn.setOnAction(e -> {
+                JSONObject res = NetworkManager.getInstance().deleteTweet(tweetId);
+                if (res.optBoolean("success")) {
+                    userTweetsContainer.getChildren().remove(tweetBox);
+                }
+            });
+            topRow.getChildren().add(delBtn);
+        }
+
+        tweetBox.getChildren().add(topRow);
 
         if (!imagePath.isEmpty()) {
             try {
-                File file = new File(imagePath);
+                java.io.File file = new java.io.File(imagePath);
                 if (file.exists()) {
-                    Image image = new Image(file.toURI().toString());
-                    ImageView imageView = new ImageView(image);
-                    imageView.setFitWidth(300);
+                    ImageView imageView = new ImageView(new javafx.scene.image.Image(file.toURI().toString()));
+                    imageView.setFitWidth(350);
                     imageView.setPreserveRatio(true);
                     tweetBox.getChildren().add(imageView);
                 }
-            } catch (Exception e) {
-                System.out.println("Could not load image in profile: " + imagePath);
-            }
+            } catch (Exception ignored) {}
         }
 
         userTweetsContainer.getChildren().add(tweetBox);

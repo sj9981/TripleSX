@@ -4,8 +4,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -127,16 +126,14 @@ public class HomeController {
     }
 
     public void addTweetToFeed(JSONObject tweetJson) {
-        String user = tweetJson.optString("username",
-                tweetJson.optString("author", "Unknown"));
+        String user = tweetJson.optString("username", tweetJson.optString("author", "Unknown"));
         String text = tweetJson.optString("content", "");
         String createdAt = tweetJson.optString("created_at", "");
-        String imagePath = tweetJson.optString("image_path",
-                tweetJson.optString("imagePath", ""));
+        String imagePath = tweetJson.optString("image_path", tweetJson.optString("imagePath", ""));
+        int tweetId = tweetJson.optInt("tweet_id", -1);
 
         VBox card = new VBox(8);
         card.getStyleClass().add("tweet-card");
-        card.setStyle("-fx-padding: 12; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0;");
 
         HBox header = new HBox(10);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -155,11 +152,24 @@ public class HomeController {
 
         Label nameLabel = new Label(user);
         nameLabel.getStyleClass().add("username-label");
-
         Label handleLabel = new Label("@" + user.toLowerCase());
         handleLabel.getStyleClass().add("handle-label");
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
+
+        // Delete button logic
+        String currentUser = SessionManager.getInstance().getUsername();
+        if (user.equalsIgnoreCase(currentUser) && tweetId != -1) {
+            // Push trash can to the right
+            javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+            javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+            Button deleteBtn = new Button("🗑");
+            deleteBtn.getStyleClass().add("delete-button");
+            deleteBtn.setOnAction(event -> confirmAndDelete(tweetId, card));
+
+            header.getChildren().addAll(spacer, deleteBtn);
+        }
 
         Label contentLabel = new Label(text);
         contentLabel.getStyleClass().add("content-label");
@@ -169,17 +179,14 @@ public class HomeController {
 
         if (imagePath != null && !imagePath.trim().isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
             try {
-                File imageFile = new File(imagePath);
+                java.io.File imageFile = new java.io.File(imagePath);
                 if (imageFile.exists()) {
-                    Image image = new Image(imageFile.toURI().toString());
-                    ImageView imageView = new ImageView(image);
-                    imageView.setFitWidth(300);
+                    ImageView imageView = new ImageView(new javafx.scene.image.Image(imageFile.toURI().toString()));
+                    imageView.setFitWidth(400);
                     imageView.setPreserveRatio(true);
                     card.getChildren().add(imageView);
                 }
-            } catch (Exception e) {
-                System.err.println("Error loading tweet image: " + e.getMessage());
-            }
+            } catch (Exception ignored) {}
         }
 
         Label timeLabel = new Label(createdAt);
@@ -187,6 +194,22 @@ public class HomeController {
         card.getChildren().add(timeLabel);
 
         feedContainer.getChildren().add(0, card);
+    }
+
+    private void confirmAndDelete(int tweetId, VBox card) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Delete Tweet");
+        alert.setHeaderText(null);
+        alert.setContentText("Are you sure you want to delete this tweet?");
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                JSONObject res = NetworkManager.getInstance().deleteTweet(tweetId);
+                if (res.optBoolean("success")) {
+                    feedContainer.getChildren().remove(card);
+                }
+            }
+        });
     }
 
     private Image getUserAvatar(String user) {
