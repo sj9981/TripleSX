@@ -51,6 +51,9 @@ public class RequestProcessor {
                 case "update_profile":
                     response = handleUpdateProfile(request);
                     break;
+                case "search":
+                    response = handleSearch(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
@@ -283,6 +286,17 @@ public class RequestProcessor {
         } catch (Exception e) {
             res.put("success", false);
             res.put("message", "Server error during profile update: " + e.getMessage());
+        }
+        return res;
+    }
+    private JSONObject handleSearch(JSONObject request) {
+        JSONObject res = new JSONObject();
+        try {
+            String query = request.optString("query", "").trim();
+            res = DatabaseManager.search(query);
+        } catch (Exception e) {
+            res.put("success", false);
+            res.put("message", "Error in search handler: " + e.getMessage());
         }
         return res;
     }

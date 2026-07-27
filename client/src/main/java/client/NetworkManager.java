@@ -300,4 +300,10 @@ public class NetworkManager
         error.put("message", message);
         return error;
     }
+    public JSONObject search(String query) {
+        JSONObject request = new JSONObject();
+        request.put("action", "search");
+        request.put("query", query);
+        return sendRequestObject(request);
+    }
 }
