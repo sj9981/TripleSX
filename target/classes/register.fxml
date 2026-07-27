@@ -53,7 +53,7 @@
                                    styleClass="auth-password"/>
 
                     <TextField fx:id="passwordVisibleField"
-                               promptText="Create a password"
+                               promptText="🔒 Create a password"
                                visible="false"
                                managed="false"
                                styleClass="auth-password"/>

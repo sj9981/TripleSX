@@ -21,7 +21,6 @@
             <Insets top="30.0" right="30.0" bottom="30.0" left="30.0"/>
         </padding>
 
-        <!-- Logo -->
         <HBox alignment="CENTER">
             <Label text="𝕏" styleClass="auth-logo"/>
         </HBox>
@@ -53,7 +52,7 @@
                                    styleClass="auth-password"/>
 
                     <TextField fx:id="passwordVisibleField"
-                               promptText="Create a password"
+                               promptText="🔒 Create a password"
                                visible="false"
                                managed="false"
                                styleClass="auth-password"/>
