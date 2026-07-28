@@ -107,7 +107,8 @@ public class SearchController {
 
     private void addTweetCard(JSONObject tweetJson) {
         int tweetId = tweetJson.optInt("tweet_id", -1);
-        String author = tweetJson.optString("username", "Unknown");
+        String username = tweetJson.optString("username", "Unknown");
+        String displayName = tweetJson.optString("display_name", username);
         String text = tweetJson.optString("content", "");
         String createdAt = tweetJson.optString("created_at", "");
         String imagePath = tweetJson.optString("image_path", "");
@@ -127,10 +128,10 @@ public class SearchController {
             avatar.setFill(Color.web("#333333"));
         }
 
-        Label nameLabel = new Label(author);
+        Label nameLabel = new Label(displayName);
         nameLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
 
-        Label handleLabel = new Label("@" + author.toLowerCase());
+        Label handleLabel = new Label("@" + username.toLowerCase());
         handleLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 13px;");
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
