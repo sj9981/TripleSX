@@ -1,55 +1,81 @@
+/* Styles */
 .root {
     -fx-background-color: #000000;
+    -fx-font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -fx-font-size: 14px;
 }
 
+/* Custom Scrollbar */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #333639;
+    -fx-background-radius: 10;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #44484c;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* Sidebar Navigation */
 .sidebar-button {
     -fx-background-color: transparent;
-    -fx-text-fill: white;
-    -fx-font-size: 18px;
+    -fx-text-fill: #e7e9ea;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 10 20;
+    -fx-padding: 12 25;
     -fx-background-radius: 30;
     -fx-cursor: hand;
 }
+
 .sidebar-button:hover {
     -fx-background-color: #181818;
 }
 
-.tweet-box,
-.tweet-box .content,
-.tweet-box .scroll-pane,
-.tweet-box .scroll-pane .viewport {
-    -fx-background-color: transparent !important;
-    -fx-background: transparent !important;
-    -fx-text-fill: white;
-    -fx-font-size: 18px;
-    -fx-prompt-text-fill: #71767b;
-    -fx-border-color: transparent;
-}
-
-.post-button {
-    -fx-background-color: #1d9bf0;
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-background-radius: 20;
-    -fx-padding: 5 20;
-    -fx-cursor: hand;
-}
-
-.image-button {
+.logout-button {
     -fx-background-color: transparent;
-    -fx-border-color: #536471;
-    -fx-border-radius: 20;
-    -fx-text-fill: #536471;
+    -fx-text-fill: #e7e9ea;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 25;
+    -fx-background-radius: 30;
     -fx-cursor: hand;
+    -fx-border-color: #2f3336;
+    -fx-border-radius: 30;
 }
 
-.post-button:hover {
-    -fx-background-color: #1a8cd8;
+.logout-button:hover {
+    -fx-background-color: rgba(244, 33, 46, 0.1);
+    -fx-text-fill: #f4212e;
+    -fx-border-color: #f4212e;
 }
 
+/* Tweet Feed & Cards */
 .tweet-card {
     -fx-background-color: transparent;
     -fx-border-color: #2f3336;
@@ -57,9 +83,13 @@
     -fx-padding: 15;
 }
 
+.tweet-card:hover {
+    -fx-background-color: #080808;
+}
+
 .username-label {
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
+    -fx-text-fill: #e7e9ea;
+    -fx-font-weight: 800;
     -fx-font-size: 15px;
 }
 
@@ -71,114 +101,53 @@
 .content-label {
     -fx-text-fill: #e7e9ea;
     -fx-font-size: 15px;
+    -fx-line-spacing: 1.2;
 }
 
-.trends-panel {
-    -fx-background-color: #16181c;
-    -fx-background-radius: 15;
-    -fx-padding: 15;
-}
-
-.auth-root {
-    -fx-background-color: #000000;
-}
-
-.auth-card {
-    -fx-background-color: #16181c;
-    -fx-background-radius: 18;
-    -fx-padding: 30;
-    -fx-border-color: #2f3336;
-    -fx-border-width: 1;
-    -fx-border-radius: 18;
-}
-
-.auth-title {
-    -fx-text-fill: white;
-    -fx-font-size: 26px;
-    -fx-font-weight: bold;
-}
-
-.auth-subtitle {
+.time-label {
     -fx-text-fill: #71767b;
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
 }
 
-.auth-label {
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-}
-
-.auth-field,
-.auth-password,
-.auth-textarea {
-    -fx-background-color: #000000;
-    -fx-text-fill: white;
-    -fx-prompt-text-fill: #71767b;
-    -fx-border-color: #2f3336;
-    -fx-border-radius: 10;
-    -fx-background-radius: 10;
-    -fx-padding: 10 12;
-}
-
-.auth-field:focused,
-.auth-password:focused,
-.auth-textarea:focused {
-    -fx-border-color: #1d9bf0;
-}
-
-.auth-button {
-    -fx-background-color: #1d9bf0;
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-background-radius: 999;
-    -fx-padding: 10 20;
-    -fx-cursor: hand;
-}
-
-.auth-button:hover {
-    -fx-background-color: #1a8cd8;
-}
-
-.auth-link {
-    -fx-text-fill: #1d9bf0;
-    -fx-cursor: hand;
-    -fx-underline: false;
-}
-
-.auth-link:hover {
-    -fx-underline: true;
-}
-
-.sidebar-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: white;
-    -fx-font-size: 28px;
-    -fx-font-weight: bold;
-    -fx-alignment: CENTER_LEFT;
-    -fx-padding: 10 20;
-    -fx-background-radius: 30;
-    -fx-cursor: hand;
-    -fx-pref-width: 210px;
-}
-
-.logout-button {
+/* Input Fields (Tweet Box) */
+.tweet-box {
     -fx-background-color: transparent;
     -fx-text-fill: white;
     -fx-font-size: 18px;
-    -fx-font-weight: bold;
-    -fx-alignment: CENTER_LEFT;
-    -fx-padding: 10 20;
-    -fx-background-radius: 30;
-    -fx-cursor: hand;
-    -fx-pref-width: 210px;
+    -fx-prompt-text-fill: #71767b;
+    -fx-border-color: transparent;
 }
 
-.auth-logo{
-    -fx-font-size: 42px;
+.tweet-box .content {
+    -fx-background-color: transparent;
+}
+
+/* Action Buttons */
+.post-button {
+    -fx-background-color: #1d9bf0;
     -fx-text-fill: white;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
+    -fx-background-radius: 25;
+    -fx-padding: 8 20;
+    -fx-cursor: hand;
+}
+
+.post-button:hover {
+    -fx-background-color: #1a8cd8;
+}
+
+.image-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1d9bf0;
+    -fx-font-size: 18px;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-background-radius: 20;
+}
+
+.image-button:hover {
+    -fx-background-color: rgba(29, 155, 240, 0.1);
 }
 
 .delete-button {
@@ -186,8 +155,8 @@
     -fx-text-fill: #71767b;
     -fx-font-size: 16px;
     -fx-cursor: hand;
+    -fx-padding: 5;
     -fx-background-radius: 20;
-    -fx-padding: 2 8;
 }
 
 .delete-button:hover {
@@ -195,12 +164,95 @@
     -fx-text-fill: #f4212e;
 }
 
-.time-label {
-    -fx-text-fill: #71767b;
-    -fx-font-size: 12px;
+/* Auth Styles */
+.auth-root {
+    -fx-background-color: #000000;
 }
 
-/* Delete tweet*/
+.auth-card {
+    -fx-background-color: #000000;
+    -fx-padding: 40;
+    -fx-border-color: #2f3336;
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+
+.auth-logo {
+    -fx-font-size: 45px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 20 0;
+}
+
+.auth-title {
+    -fx-text-fill: white;
+    -fx-font-size: 31px;
+    -fx-font-weight: 800;
+}
+
+.auth-subtitle {
+    -fx-text-fill: #71767b;
+    -fx-font-size: 15px;
+}
+
+.auth-label {
+    -fx-text-fill: #e7e9ea;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.auth-field, .auth-password {
+    -fx-background-color: #000000;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #71767b;
+    -fx-border-color: #333639;
+    -fx-border-radius: 4;
+    -fx-padding: 12;
+}
+
+.auth-field:focused, .auth-password:focused {
+    -fx-border-color: #1d9bf0;
+    -fx-background-color: #000000;
+}
+
+.auth-button {
+    -fx-background-color: #eff3f4;
+    -fx-text-fill: #0f1419;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 25;
+    -fx-padding: 12;
+    -fx-cursor: hand;
+}
+
+.auth-button:hover {
+    -fx-background-color: #d7dbdc;
+}
+
+.auth-link {
+    -fx-text-fill: #1d9bf0;
+    -fx-cursor: hand;
+}
+
+.auth-link:hover {
+    -fx-underline: true;
+}
+
+.eye-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #71767b;
+    -fx-cursor: hand;
+}
+
+/* Trends and Panels */
+.trends-panel {
+    -fx-background-color: #16181c;
+    -fx-background-radius: 16;
+    -fx-padding: 15;
+}
+
+/* Delete Tweet Modal */
 .delete-modal-pane {
     -fx-background-color: #000000;
     -fx-background-radius: 16;
@@ -219,20 +271,15 @@
 .delete-modal-body {
     -fx-text-fill: #71767b;
     -fx-font-size: 15px;
-    -fx-line-spacing: 2;
 }
 
 .confirm-delete-button {
-    -fx-background-color: #f4212e; /* X Red */
+    -fx-background-color: #f4212e;
     -fx-text-fill: white;
-    -fx-font-size: 15px;
     -fx-font-weight: bold;
     -fx-background-radius: 25;
-    -fx-padding: 12 0;
+    -fx-padding: 12;
     -fx-cursor: hand;
-}
-.confirm-delete-button:hover {
-    -fx-background-color: #dc1e29;
 }
 
 .cancel-delete-button {
@@ -240,18 +287,12 @@
     -fx-text-fill: white;
     -fx-border-color: #536471;
     -fx-border-radius: 25;
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
-    -fx-padding: 12 0;
+    -fx-padding: 12;
     -fx-cursor: hand;
 }
-.cancel-delete-button:hover {
-    -fx-background-color: rgba(255,255,255,0.1);
-}
 
-.like-button-liked {
-    -fx-text-fill: #f4212e;
-}
-.like-button-unliked {
-    -fx-text-fill: #71767b;
+/* Utility */
+.image-view-rounded {
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
 }
