@@ -51,7 +51,7 @@ public class ProfileController
         Circle clip = new Circle(50, 50, 50);
         avatarImageView.setClip(clip);
     }
-    @FXML private Button followButton; // Link to FXML
+    @FXML private Button followButton;
     private boolean isFollowingCurrent;
 
     public void initUserData(String username)
@@ -63,15 +63,12 @@ public class ProfileController
 
         String loggedInUser = SessionManager.getInstance().getUsername();
 
-        // Logic to switch buttons
         if (loggedInUser != null && loggedInUser.equalsIgnoreCase(username)) {
-            // My profile
             editProfileButton.setVisible(true);
             editProfileButton.setManaged(true);
             followButton.setVisible(false);
             followButton.setManaged(false);
         } else {
-            // someone else's profile
             editProfileButton.setVisible(false);
             editProfileButton.setManaged(false);
             followButton.setVisible(true);
@@ -90,7 +87,6 @@ public class ProfileController
                 return;
             }
 
-            // Get follow status from server
             this.isFollowingCurrent = response.optBoolean("isFollowing", false);
             updateFollowButtonUI();
 
@@ -103,7 +99,6 @@ public class ProfileController
 
             loadAvatarImage(user.optString("avatarPath", ""));
 
-            // Load Tweets
             JSONArray tweets = response.optJSONArray("tweets");
             userTweetsContainer.getChildren().clear();
             if (tweets != null) {
@@ -120,11 +115,9 @@ public class ProfileController
     private void updateFollowButtonUI() {
         if (isFollowingCurrent) {
             followButton.setText("Unfollow");
-            // Dark style for Unfollow
             followButton.setStyle("-fx-background-color: black; -fx-text-fill: white; -fx-border-color: #536471; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;");
         } else {
             followButton.setText("Follow");
-            // Bright white style for Follow
             followButton.setStyle("-fx-background-color: white; -fx-text-fill: black; -fx-background-radius: 20; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;");
         }
     }
@@ -142,11 +135,9 @@ public class ProfileController
         }
 
         if (response != null && response.optBoolean("success", false)) {
-            // Toggle the local state
             isFollowingCurrent = !isFollowingCurrent;
             updateFollowButtonUI();
 
-            // Refresh profile data to update the "Followers" count label
             loadProfileData();
         } else {
             System.err.println("Follow/Unfollow action failed: " + (response != null ? response.optString("message") : "No response"));
@@ -341,7 +332,7 @@ public class ProfileController
         setupLikeButtonStyle(likeBtn, isLiked, likeCount);
 
         likeBtn.setOnAction(e -> {
-            if (likeBtn.getText().contains("\u2764\ufe0f ")) {
+            if (likeBtn.getText().contains("❤")) {
                 JSONObject res = NetworkManager.getInstance().unlikeTweet(tweetId);
                 if (res.optBoolean("success")) {
                     int currentNum = Integer.parseInt(likeBtn.getText().replaceAll("[^0-9]", ""));
@@ -362,10 +353,10 @@ public class ProfileController
 
     private void setupLikeButtonStyle(Button btn, boolean isLiked, int count) {
         if (isLiked) {
-            btn.setText("\u2764\ufe0f " + count);
+            btn.setText("❤ " + count);
             btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-cursor: hand; -fx-font-size: 14px;");
         } else {
-            btn.setText("\u2661 " + count);
+            btn.setText("♡ " + count);
             btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14px;");
         }
     }
@@ -380,7 +371,6 @@ public class ProfileController
             Parent root = loader.load();
 
             HomeController homeController = loader.getController();
-            // FIX: Restore Home feed context using the actual logged-in user's username
             homeController.setUserInfo(SessionManager.getInstance().getUsername());
 
             Stage stage = (Stage) displayNameLabel.getScene().getWindow();

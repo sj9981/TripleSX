@@ -9,7 +9,9 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "Sa123456*";
+    private static final String PASSWORD = "12345";
+    private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
+        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static Connection getConnection() throws SQLException
     {
@@ -329,7 +331,6 @@ public class DatabaseManager
 
         if (profileUserId == -1) return tweets;
 
-        // کوئری اصلاح شده برای دریافت تعداد لایک و وضعیت لایک کاربر جاری
         String sql = "SELECT t.id AS tweet_id, t.content, m.media_path, t.created_at, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked " +
@@ -349,7 +350,11 @@ public class DatabaseManager
                     tweet.put("tweet_id", rs.getInt("tweet_id"));
                     tweet.put("content", rs.getString("content"));
                     tweet.put("imagePath", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
-                    tweet.put("created_at", rs.getTimestamp("created_at").toString());
+
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
+
                     tweet.put("like_count", rs.getInt("like_count"));
                     tweet.put("is_liked", rs.getInt("is_liked") > 0);
                     tweets.put(tweet);
@@ -374,9 +379,7 @@ public class DatabaseManager
                         "t.content, " +
                         "t.created_at, " +
                         "tm.media_path, " +
-                        // اضافه شده: شمارش لایک‌های این تویت
                         "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
-                        // اضافه شده: آیا کاربر فعلی این تویت را لایک کرده؟ (بر اساس یوزرنمی که ورودی متد است)
                         "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = (SELECT id FROM users WHERE username = ?)) AS is_liked " +
                         "FROM tweets t " +
                         "JOIN users u ON t.user_id = u.id " +
@@ -392,10 +395,9 @@ public class DatabaseManager
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql))
         {
-            // حالا ۳ تا علامت سوال داریم، پس ۳ بار username را تنظیم می‌کنیم
-            ps.setString(1, username); // برای زیرکوئری is_liked
-            ps.setString(2, username); // برای تویت‌های خودم
-            ps.setString(3, username); // برای تویت‌های فالووینگ‌ها
+            ps.setString(1, username);
+            ps.setString(2, username);
+            ps.setString(3, username);
 
             try (ResultSet rs = ps.executeQuery())
             {
@@ -408,7 +410,10 @@ public class DatabaseManager
                     tweet.put("display_name", rs.getString("display_name"));
                     tweet.put("avatar_path", rs.getString("avatar_path"));
                     tweet.put("content", rs.getString("content"));
-                    tweet.put("created_at", rs.getTimestamp("created_at").toString());
+
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
 
                     String image = rs.getString("media_path");
                     if (image == null) {
@@ -416,10 +421,8 @@ public class DatabaseManager
                     }
                     tweet.put("image_path", image);
 
-                    // اضافه کردن اطلاعات لایک به آبجکت تویت برای فرستادن به کلاینت
                     tweet.put("like_count", rs.getInt("like_count"));
-                    tweet.put("is_liked", rs.getInt("is_liked") > 0); // اگر 1 بود یعنی true، اگر 0 بود یعنی false
-
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
                     tweets.put(tweet);
                 }
             }
@@ -526,7 +529,6 @@ public class DatabaseManager
                 }
             }
 
-
             try (PreparedStatement pstmt = conn.prepareStatement(tweetSql))
             {
                 pstmt.setString(1, searchQuery);
@@ -539,7 +541,11 @@ public class DatabaseManager
                         tweet.put("display_name", rs.getString("display_name"));
                         tweet.put("avatar_path", rs.getString("avatar_path") != null ? rs.getString("avatar_path") : "");
                         tweet.put("content", rs.getString("content"));
-                        tweet.put("created_at", rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toString() : "");
+
+                        Timestamp ts = rs.getTimestamp("created_at");
+                        String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                        tweet.put("created_at", formattedDate);
+
                         tweet.put("image_path", rs.getString("media_path") != null ? rs.getString("media_path") : "");
                         tweets.put(tweet);
                     }
@@ -558,7 +564,7 @@ public class DatabaseManager
         }
         return result;
     }
-    //To make sure user has access to the tweet to delete it
+
     public static boolean deleteTweet(int tweetId, String username) {
         String sql = "DELETE FROM tweets WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)";
         try (Connection conn = getConnection();

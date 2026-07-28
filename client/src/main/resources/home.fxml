@@ -50,7 +50,7 @@
                 <VBox spacing="10"
                       style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;">
                     <HBox spacing="10">
-                        <Circle radius="20" fill="#333"/>
+                        <Circle fx:id="userAvatarCircle" radius="20" fill="#333"/>
                         <TextArea fx:id="tweetTextArea"
                                   prefHeight="80"
                                   promptText="What's happening?"

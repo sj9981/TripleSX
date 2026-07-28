@@ -263,13 +263,13 @@ public class NetworkManager
                             System.out.println("[CLIENT] New tweet push received.");
 
                             Platform.runLater(() -> {
-                                HomeController controller = HomeController.getInstance();
-                                if (controller != null) {
-                                    controller.addTweetToFeed(message);
-                                } else {
-                                    System.err.println("[CLIENT] HomeController instance is null.");
-                                }
-                            });
+                                    HomeController controller = HomeController.getInstance();
+                                    if (controller != null) {
+                                        controller.addTweetToFeed(message, true);
+                                    } else {
+                                        System.err.println("[CLIENT] HomeController instance is null.");
+                                    }
+                                });
                         } else {
                             System.out.println("[CLIENT] Unknown push type: " + type);
                         }
