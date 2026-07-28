@@ -13,8 +13,12 @@ public class MainClientGUI extends Application
     public void start(Stage primaryStage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
         primaryStage.setTitle("X Clone - Login");
-        primaryStage.setScene(new Scene(root, 400, 500));
-        primaryStage.setResizable(false);
+        Scene scene = new Scene(root, 1000, 700);
+        primaryStage.setScene(scene);
+        primaryStage.setResizable(true);
+        // Set Minimums
+        primaryStage.setMinWidth(900);
+        primaryStage.setMinHeight(650);
         primaryStage.show();
     }
 

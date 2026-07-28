@@ -84,9 +84,9 @@
         <VBox spacing="10" styleClass="trends-panel">
             <Label text="What's happening"
                    style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: 800;"/>
-            <Label text="#JavaFX" style="-fx-text-fill: #1d9bf0;"/>
+            <Label text="#Java" style="-fx-text-fill: #1d9bf0;"/>
             <Label text="#TripleSX" style="-fx-text-fill: #1d9bf0;"/>
-            <Label text="#OpenAI" style="-fx-text-fill: #1d9bf0;"/>
+            <Label text="#I_need_help" style="-fx-text-fill: #1d9bf0;"/>
         </VBox>
     </VBox>
 
