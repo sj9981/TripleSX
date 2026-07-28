@@ -34,7 +34,6 @@ public class SearchController {
 
     @FXML
     public void initialize() {
-        // Initial empty state
     }
 
     @FXML
@@ -107,6 +106,7 @@ public class SearchController {
     }
 
     private void addTweetCard(JSONObject tweetJson) {
+        int tweetId = tweetJson.optInt("tweet_id", -1);
         String author = tweetJson.optString("username", "Unknown");
         String text = tweetJson.optString("content", "");
         String createdAt = tweetJson.optString("created_at", "");
@@ -114,7 +114,7 @@ public class SearchController {
         String avatarPath = tweetJson.optString("avatar_path", "");
 
         VBox card = new VBox(8);
-        card.setStyle("-fx-padding: 12; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0;");
+        card.setStyle("-fx-padding: 12; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-cursor: hand;");
 
         HBox header = new HBox(10);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -159,7 +159,26 @@ public class SearchController {
         timeLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
         card.getChildren().add(timeLabel);
 
+        if (tweetId != -1) {
+            card.setOnMouseClicked(event -> openTweetDetails(tweetId));
+        }
+
         tweetsContainer.getChildren().add(card);
+    }
+
+    private void openTweetDetails(int tweetId) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/tweet-details.fxml"));
+            Parent root = loader.load();
+            TweetDetailsController controller = loader.getController();
+            controller.setTweetId(tweetId);
+
+            Stage stage = (Stage) searchField.getScene().getWindow();
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
+            stage.setTitle("X Clone - Post");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void navigateToProfile(String targetUsername) {

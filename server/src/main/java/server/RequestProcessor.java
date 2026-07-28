@@ -3,6 +3,7 @@ package server;
 import org.json.JSONObject;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class RequestProcessor {
@@ -35,6 +36,9 @@ public class RequestProcessor {
                     break;
                 case "create_tweet":
                     response = handleCreateTweet(request);
+                    break;
+                case "get_tweet_details":
+                    response = handleGetTweetDetails(request);
                     break;
                 case "follow":
                     response = handleFollow(request);
@@ -143,13 +147,14 @@ public class RequestProcessor {
             String username = request.getString("username");
             String content = request.getString("content");
             String imagePath = request.optString("image_path", "").trim();
+            int parentTweetId = request.optInt("parent_tweet_id", -1);
 
-            boolean success = DatabaseManager.createTweet(username, content, imagePath);
+            boolean success = DatabaseManager.createTweet(username, content, imagePath, parentTweetId);
 
             res.put("success", success);
             res.put("message", success ? "Tweet published!" : "Failed to publish tweet.");
 
-            if (success) {
+            if (success && parentTweetId == -1) {
                 List<String> followers = DatabaseManager.getFollowers(username);
 
                 JSONObject newTweetNotification = new JSONObject();
@@ -158,7 +163,7 @@ public class RequestProcessor {
                 newTweetNotification.put("author", username);
                 newTweetNotification.put("content", content);
                 newTweetNotification.put("image_path", imagePath);
-                newTweetNotification.put("created_at", LocalDateTime.now().toString());
+                newTweetNotification.put("created_at", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
                 for (String follower : followers) {
                     ConnectionManager.sendToClient(follower, newTweetNotification.toString());
@@ -171,6 +176,19 @@ public class RequestProcessor {
         }
 
         return res;
+    }
+
+    private JSONObject handleGetTweetDetails(JSONObject request) {
+        try {
+            int tweetId = request.getInt("tweet_id");
+            String username = request.optString("username", "");
+            return DatabaseManager.getTweetDetails(tweetId, username);
+        } catch (Exception e) {
+            JSONObject res = new JSONObject();
+            res.put("success", false);
+            res.put("message", "Error retrieving tweet details: " + e.getMessage());
+            return res;
+        }
     }
 
     private JSONObject handleFollow(JSONObject request) {
@@ -307,6 +325,7 @@ public class RequestProcessor {
         }
         return res;
     }
+
     private JSONObject handleSearch(JSONObject request) {
         JSONObject res = new JSONObject();
         try {
@@ -318,6 +337,7 @@ public class RequestProcessor {
         }
         return res;
     }
+
     private JSONObject handleDeleteTweet(JSONObject request) {
         JSONObject res = new JSONObject();
         int tweetId = request.getInt("tweet_id");
