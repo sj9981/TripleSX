@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-
 public class ProfileController
 {
     @FXML private Button editProfileButton;
@@ -153,11 +152,9 @@ public class ProfileController
             if (image != null && !image.isError())
             {
                 avatarImageView.setImage(image);
-                System.out.println("Avatar loaded successfully.");
             }
             else
             {
-                System.out.println("Avatar image was null or invalid. Using default.");
                 setDefaultAvatar();
             }
 
@@ -173,31 +170,23 @@ public class ProfileController
     {
         if (path == null || path.trim().isEmpty())
         {
-            System.out.println("Avatar path is empty.");
             return loadDefaultAvatarImage();
         }
-
-        System.out.println("Trying avatar path: " + path);
 
         try
         {
             File file = new File(path);
-            System.out.println("absolute path = " + file.getAbsolutePath());
-            System.out.println("file exists = " + file.exists());
-
             if (file.exists())
             {
                 Image image = new Image(file.toURI().toString(), false);
                 if (!image.isError())
                 {
-                    System.out.println("Avatar loaded from file system.");
                     return image;
                 }
             }
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            System.out.println("Failed loading avatar from file system.");
         }
 
         try
@@ -210,14 +199,12 @@ public class ProfileController
                 Image image = new Image(stream);
                 if (!image.isError())
                 {
-                    System.out.println("Avatar loaded from resources: " + resourcePath);
                     return image;
                 }
             }
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            System.out.println("Failed loading avatar from resources.");
         }
 
         try
@@ -230,17 +217,14 @@ public class ProfileController
                 Image image = new Image(stream);
                 if (!image.isError())
                 {
-                    System.out.println("Avatar loaded from resources by filename: " + fileNameOnly);
                     return image;
                 }
             }
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            System.out.println("Failed loading avatar by filename from resources.");
         }
 
-        System.out.println("Avatar not found anywhere. Falling back to default.");
         return loadDefaultAvatarImage();
     }
 
@@ -293,6 +277,7 @@ public class ProfileController
 
         VBox tweetBox = new VBox(10);
         tweetBox.getStyleClass().add("tweet-card");
+        tweetBox.setStyle("-fx-cursor: hand;");
 
         HBox topRow = new HBox();
         Label contentLabel = new Label(content);
@@ -327,7 +312,6 @@ public class ProfileController
             } catch (Exception ignored) {}
         }
 
-
         Button likeBtn = new Button();
         setupLikeButtonStyle(likeBtn, isLiked, likeCount);
 
@@ -348,7 +332,28 @@ public class ProfileController
         });
 
         tweetBox.getChildren().add(likeBtn);
+
+        tweetBox.setOnMouseClicked(event -> {
+            if (event.getTarget() instanceof Button) return;
+            openTweetDetails(tweetId);
+        });
+
         userTweetsContainer.getChildren().add(tweetBox);
+    }
+
+    private void openTweetDetails(int tweetId) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/tweet-details.fxml"));
+            Parent root = loader.load();
+            TweetDetailsController controller = loader.getController();
+            controller.setTweetId(tweetId);
+
+            Stage stage = (Stage) displayNameLabel.getScene().getWindow();
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
+            stage.setTitle("X Clone - Post");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void setupLikeButtonStyle(Button btn, boolean isLiked, int count) {
@@ -360,7 +365,6 @@ public class ProfileController
             btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14px;");
         }
     }
-
 
     @FXML
     private void handleBack()

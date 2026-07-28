@@ -26,13 +26,13 @@ public class HomeController {
     private static HomeController instance;
 
     @FXML
-    private Circle userAvatarCircle;
-
-    @FXML
     private TextArea tweetTextArea;
 
     @FXML
     private VBox feedContainer;
+
+    @FXML
+    private Circle userAvatarCircle;
 
     private String username;
     private String selectedImagePath = "";
@@ -60,9 +60,20 @@ public class HomeController {
 
     public void setUserInfo(String username) {
         this.username = username;
-        System.out.println("Logged in user set to: " + username);
         updateUserAvatar();
         loadTweetsFromServer();
+    }
+
+    private void updateUserAvatar() {
+        String currentUser = SessionManager.getInstance().getUsername();
+        if (currentUser != null && userAvatarCircle != null) {
+            Image avatarImg = getUserAvatar(currentUser);
+            if (avatarImg != null) {
+                userAvatarCircle.setFill(new ImagePattern(avatarImg));
+            } else {
+                userAvatarCircle.setFill(Color.web("#333333"));
+            }
+        }
     }
 
     @FXML
@@ -137,12 +148,15 @@ public class HomeController {
 
         int likeCount = tweetJson.optInt("like_count", 0);
         boolean isLiked = tweetJson.optBoolean("is_liked", false);
+        int replyCount = tweetJson.optInt("reply_count", 0);
 
         VBox card = new VBox(8);
         card.getStyleClass().add("tweet-card");
+        card.setStyle("-fx-cursor: hand;");
 
         HBox header = new HBox(10);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        header.setStyle("-fx-cursor: hand;");
 
         Circle avatar = new Circle(18);
         Image avatarImg = getUserAvatar(user);
@@ -160,6 +174,10 @@ public class HomeController {
         handleLabel.getStyleClass().add("handle-label");
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
+        header.setOnMouseClicked(event -> {
+            event.consume();
+            navigateToProfile(user);
+        });
 
         String currentUser = SessionManager.getInstance().getUsername();
         if (user.equalsIgnoreCase(currentUser) && tweetId != -1) {
@@ -208,7 +226,11 @@ public class HomeController {
             }
         });
 
-        HBox actionsBar = new HBox(likeBtn);
+        Button replyBtn = new Button("💬 " + replyCount);
+        replyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14px;");
+        replyBtn.setOnAction(e -> openTweetDetails(tweetId));
+
+        HBox actionsBar = new HBox(15, likeBtn, replyBtn);
         actionsBar.setPadding(new javafx.geometry.Insets(5, 0, 5, 0));
         card.getChildren().add(actionsBar);
 
@@ -216,10 +238,48 @@ public class HomeController {
         timeLabel.getStyleClass().add("time-label");
         card.getChildren().add(timeLabel);
 
+        card.setOnMouseClicked(event -> {
+            if (event.getTarget() instanceof Button) return;
+            openTweetDetails(tweetId);
+        });
+
         if (prepend) {
             feedContainer.getChildren().add(0, card);
         } else {
             feedContainer.getChildren().add(card);
+        }
+    }
+
+    private void navigateToProfile(String targetUsername) {
+        if (targetUsername == null || targetUsername.trim().isEmpty()) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/profile.fxml"));
+            Parent root = loader.load();
+
+            ProfileController profileController = loader.getController();
+            profileController.initUserData(targetUsername);
+
+            Stage stage = (Stage) feedContainer.getScene().getWindow();
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
+            stage.setTitle("X Clone - Profile");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void openTweetDetails(int tweetId) {
+        if (tweetId == -1) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/tweet-details.fxml"));
+            Parent root = loader.load();
+            TweetDetailsController controller = loader.getController();
+            controller.setTweetId(tweetId);
+
+            Stage stage = (Stage) feedContainer.getScene().getWindow();
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
+            stage.setTitle("X Clone - Post");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -431,17 +491,6 @@ public class HomeController {
         } catch (IOException e) {
             System.err.println("Could not load Search page: " + e.getMessage());
             e.printStackTrace();
-        }
-    }
-    private void updateUserAvatar() {
-        String currentUser = SessionManager.getInstance().getUsername();
-        if (currentUser != null && userAvatarCircle != null) {
-            Image avatarImg = getUserAvatar(currentUser);
-            if (avatarImg != null) {
-                userAvatarCircle.setFill(new javafx.scene.paint.ImagePattern(avatarImg));
-            } else {
-                userAvatarCircle.setFill(Color.web("#333333"));
-            }
         }
     }
 }
