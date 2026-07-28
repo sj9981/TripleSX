@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "12345";
+    private static final String PASSWORD = "123456";
     private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -474,10 +474,12 @@ public class DatabaseManager
         if (profileUserId == -1) return tweets;
 
         String sql = "SELECT t.id AS tweet_id, t.content, m.media_path, t.created_at, " +
+                "u.display_name, u.username, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
+                "JOIN users u ON t.user_id = u.id " +
                 "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
                 "WHERE t.user_id = ? " +
                 "ORDER BY t.created_at DESC";
@@ -502,6 +504,9 @@ public class DatabaseManager
                     tweet.put("is_liked", rs.getInt("is_liked") > 0);
                     tweet.put("reply_count", rs.getInt("reply_count"));
                     tweets.put(tweet);
+
+                    tweet.put("display_name", rs.getString("display_name"));
+                    tweet.put("username", rs.getString("username"));
                 }
             }
         } catch (SQLException e) {
@@ -774,5 +779,42 @@ public class DatabaseManager
             return 0;
         }
         return 0;
+    }
+
+    public static JSONArray getFollowersList(String username) {
+        JSONArray list = new JSONArray();
+        String sql = "SELECT u.username, u.display_name, u.bio, u.avatar_path FROM users u " +
+                "JOIN follows f ON u.id = f.follower_id " +
+                "WHERE f.following_id = (SELECT id FROM users WHERE username = ?)";
+        return fetchUserList(sql, username);
+    }
+
+    public static JSONArray getFollowingList(String username) {
+        JSONArray list = new JSONArray();
+        String sql = "SELECT u.username, u.display_name, u.bio, u.avatar_path FROM users u " +
+                "JOIN follows f ON u.id = f.following_id " +
+                "WHERE f.follower_id = (SELECT id FROM users WHERE username = ?)";
+        return fetchUserList(sql, username);
+    }
+
+    private static JSONArray fetchUserList(String sql, String username) {
+        JSONArray list = new JSONArray();
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject user = new JSONObject();
+                    user.put("username", rs.getString("username"));
+                    user.put("displayName", rs.getString("display_name"));
+                    user.put("bio", rs.getString("bio") == null ? "" : rs.getString("bio"));
+                    user.put("avatarPath", rs.getString("avatar_path") == null ? "" : rs.getString("avatar_path"));
+                    list.put(user);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }

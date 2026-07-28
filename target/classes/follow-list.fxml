@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox prefHeight="500.0" prefWidth="400.0" style="-fx-background-color: black;"
+      stylesheets="@style.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="client.FollowListController">
+    <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-padding: 15; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0;">
+        <Button text="←" onAction="#handleBack" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 18; -fx-cursor: hand;"/>
+        <Label fx:id="titleLabel" text="Users" style="-fx-text-fill: white; -fx-font-size: 18; -fx-font-weight: bold;"/>
+    </HBox>
+    <ScrollPane fitToWidth="true" style="-fx-background: black; -fx-background-color: black;">
+        <VBox fx:id="userListContainer" spacing="10" style="-fx-padding: 10;"/>
+    </ScrollPane>
+</VBox>

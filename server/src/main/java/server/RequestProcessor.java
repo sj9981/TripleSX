@@ -1,5 +1,6 @@
 package server;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.time.LocalDateTime;
@@ -66,6 +67,12 @@ public class RequestProcessor {
                     break;
                 case "unlike_tweet":
                     response = handleUnlikeTweet(request);
+                    break;
+                case "get_followers_list":
+                    response = handleGetFollowList(request, true);
+                    break;
+                case "get_following_list":
+                    response = handleGetFollowList(request, false);
                     break;
                 default:
                     response.put("success", false);
@@ -361,5 +368,16 @@ public class RequestProcessor {
         int tweetId = request.getInt("tweet_id");
         boolean success = DatabaseManager.unlikeTweet(username, tweetId);
         return new JSONObject().put("success", success).put("message", success ? "Unliked" : "Error");
+    }
+    private JSONObject handleGetFollowList(JSONObject request, boolean isFollowers) {
+        JSONObject res = new JSONObject();
+        String username = request.getString("username");
+        JSONArray users = isFollowers ?
+                DatabaseManager.getFollowersList(username) :
+                DatabaseManager.getFollowingList(username);
+
+        res.put("success", true);
+        res.put("users", users);
+        return res;
     }
 }

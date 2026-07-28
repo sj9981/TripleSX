@@ -140,7 +140,9 @@ public class HomeController {
     }
 
     public void addTweetToFeed(JSONObject tweetJson, boolean prepend) {
-        String user = tweetJson.optString("username", tweetJson.optString("author", "Unknown"));
+        String username = tweetJson.optString("username", "Unknown");
+        //get display name but uses the username if empty
+        String displayName = tweetJson.optString("display_name", username);
         String text = tweetJson.optString("content", "");
         String createdAt = tweetJson.optString("created_at", "");
         String imagePath = tweetJson.optString("image_path", tweetJson.optString("imagePath", ""));
@@ -159,7 +161,7 @@ public class HomeController {
         header.setStyle("-fx-cursor: hand;");
 
         Circle avatar = new Circle(18);
-        Image avatarImg = getUserAvatar(user);
+        Image avatarImg = getUserAvatar(username);
         if (avatarImg != null) {
             avatar.setFill(new ImagePattern(avatarImg));
         } else {
@@ -168,19 +170,20 @@ public class HomeController {
         avatar.setStroke(Color.web("#2f3336"));
         avatar.setStrokeWidth(1.0);
 
-        Label nameLabel = new Label(user);
+        Label nameLabel = new Label(displayName);
         nameLabel.getStyleClass().add("username-label");
-        Label handleLabel = new Label("@" + user.toLowerCase());
+
+        Label handleLabel = new Label("@" + username.toLowerCase());
         handleLabel.getStyleClass().add("handle-label");
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
         header.setOnMouseClicked(event -> {
             event.consume();
-            navigateToProfile(user);
+            navigateToProfile(username);
         });
 
         String currentUser = SessionManager.getInstance().getUsername();
-        if (user.equalsIgnoreCase(currentUser) && tweetId != -1) {
+        if (username.equalsIgnoreCase(currentUser) && tweetId != -1) {
             javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
             javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
             Button deleteBtn = new Button("🗑");

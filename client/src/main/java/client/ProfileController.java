@@ -416,4 +416,28 @@ public class ProfileController
         }
     }
 
+    @FXML
+    private void showFollowers() {
+        openFollowList(true);
+    }
+
+    @FXML
+    private void showFollowing() {
+        openFollowList(false);
+    }
+
+    private void openFollowList(boolean followers) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/follow-list.fxml"));
+            Parent root = loader.load();
+
+            FollowListController controller = loader.getController();
+            controller.loadData(currentUsername, followers);
+
+            Stage stage = (Stage) displayNameLabel.getScene().getWindow();
+            stage.getScene().setRoot(root);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
