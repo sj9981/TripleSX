@@ -118,6 +118,7 @@ public class NetworkManager
         JSONObject request = new JSONObject();
         request.put("action", "get_profile");
         request.put("username", username);
+        request.put("loggedInUser", SessionManager.getInstance().getUsername()); // Added this
         return sendRequestObject(request);
     }
 
@@ -312,6 +313,22 @@ public class NetworkManager
         request.put("action", "delete_tweet");
         request.put("tweet_id", tweetId);
         request.put("username", SessionManager.getInstance().getUsername());
+        return sendRequestObject(request);
+    }
+
+    public JSONObject followUser(String follower, String following) {
+        JSONObject request = new JSONObject();
+        request.put("action", "follow");
+        request.put("follower_username", follower);
+        request.put("following_username", following);
+        return sendRequestObject(request);
+    }
+
+    public JSONObject unfollowUser(String follower, String following) {
+        JSONObject request = new JSONObject();
+        request.put("action", "unfollow");
+        request.put("follower_username", follower);
+        request.put("following_username", following);
         return sendRequestObject(request);
     }
 }

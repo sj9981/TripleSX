@@ -232,6 +232,15 @@ public class RequestProcessor {
             int followerCount = DatabaseManager.getFollowerCount(userId);
             int followingCount = DatabaseManager.getFollowingCount(userId);
 
+            String loggedInUser = request.optString("loggedInUser", "");
+            boolean isFollowing = false;
+            if (!loggedInUser.isEmpty() && !loggedInUser.equalsIgnoreCase(username)) {
+                isFollowing = DatabaseManager.isFollowing(loggedInUser, username);
+            }
+
+            res.put("success", true);
+            res.put("isFollowing", isFollowing);
+
             res.put("success", true);
             res.put("message", "Profile data retrieved successfully.");
 
