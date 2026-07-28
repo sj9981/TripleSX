@@ -24,30 +24,37 @@ public class RegisterController
     @FXML private Button togglePasswordButton;
     @FXML private Label statusLabel;
 
+    @FXML private PasswordField confirmPasswordField;
+    @FXML private TextField confirmPasswordVisibleField;
+
     private boolean passwordVisible = false;
 
     @FXML
-    private void handleSignUp()
-    {
+    private void handleSignUp() {
         String username = usernameField.getText().trim();
         String email = emailField.getText().trim();
-        String password = passwordVisible ? passwordVisibleField.getText() : passwordField.getText();
 
-        if (username.isEmpty() || email.isEmpty() || password.isEmpty())
-        {
+        String password = passwordVisible ? passwordVisibleField.getText() : passwordField.getText();
+        String confirmPassword = passwordVisible ? confirmPasswordVisibleField.getText() : confirmPasswordField.getText();
+
+        if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             statusLabel.setTextFill(javafx.scene.paint.Color.RED);
             statusLabel.setText("All fields are required!");
+            return;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            statusLabel.setTextFill(javafx.scene.paint.Color.RED);
+            statusLabel.setText("Passwords do not match!");
             return;
         }
 
         statusLabel.setTextFill(javafx.scene.paint.Color.BLUE);
         statusLabel.setText("Registering your account...");
 
-        Task<JSONObject> registerTask = new Task<>()
-        {
+        Task<JSONObject> registerTask = new Task<>() {
             @Override
-            protected JSONObject call() throws Exception
-            {
+            protected JSONObject call() throws Exception {
                 return NetworkManager.getInstance().register(username, email, password);
             }
         };
@@ -65,9 +72,7 @@ public class RegisterController
                     try
                     {
                         Thread.sleep(2000);
-                    }
-                    catch (InterruptedException ignored) {
-                    }
+                    } catch (InterruptedException ignored) {}
                     Platform.runLater(this::goToLogin);
                 }).start();
             }
@@ -79,35 +84,42 @@ public class RegisterController
         });
 
         registerTask.setOnFailed(e -> {
-            registerTask.getException().printStackTrace();
+            if (registerTask.getException() != null)
+            {
+                registerTask.getException().printStackTrace();
+            }
             statusLabel.setTextFill(javafx.scene.paint.Color.RED);
-            statusLabel.setText("Server error. Please try again.");
+            statusLabel.setText("Server error. Please try again later.");
         });
 
         new Thread(registerTask).start();
     }
 
     @FXML
-    private void togglePasswordVisibility()
-    {
+    private void togglePasswordVisibility() {
         passwordVisible = !passwordVisible;
 
         if (passwordVisible)
         {
             passwordVisibleField.setText(passwordField.getText());
-            passwordVisibleField.setVisible(true);
-            passwordVisibleField.setManaged(true);
-            passwordField.setVisible(false);
-            passwordField.setManaged(false);
+            passwordVisibleField.setVisible(true); passwordVisibleField.setManaged(true);
+            passwordField.setVisible(false); passwordField.setManaged(false);
+
+            confirmPasswordVisibleField.setText(confirmPasswordField.getText());
+            confirmPasswordVisibleField.setVisible(true); confirmPasswordVisibleField.setManaged(true);
+            confirmPasswordField.setVisible(false); confirmPasswordField.setManaged(false);
+
             togglePasswordButton.setText("🙈");
-        }
-        else
-        {
+        } else {
             passwordField.setText(passwordVisibleField.getText());
-            passwordField.setVisible(true);
-            passwordField.setManaged(true);
-            passwordVisibleField.setVisible(false);
-            passwordVisibleField.setManaged(false);
+            passwordField.setVisible(true); passwordField.setManaged(true);
+            passwordVisibleField.setVisible(false); passwordVisibleField.setManaged(false);
+
+
+            confirmPasswordField.setText(confirmPasswordVisibleField.getText());
+            confirmPasswordField.setVisible(true); confirmPasswordField.setManaged(true);
+            confirmPasswordVisibleField.setVisible(false); confirmPasswordVisibleField.setManaged(false);
+
             togglePasswordButton.setText("🙉");
         }
     }

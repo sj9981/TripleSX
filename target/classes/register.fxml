@@ -59,9 +59,26 @@
                 </StackPane>
 
                 <Button fx:id="togglePasswordButton"
-                        text="👁"
+                        text="🙈"
                         onAction="#togglePasswordVisibility"
                         styleClass="eye-button"/>
+            </HBox>
+        </VBox>
+
+        <VBox spacing="8.0">
+            <Label text="Confirm Password" styleClass="auth-label"/>
+            <HBox spacing="8.0" alignment="CENTER_LEFT">
+                <StackPane HBox.hgrow="ALWAYS">
+                    <PasswordField fx:id="confirmPasswordField"
+                                   promptText="🔒 Re-enter your password"
+                                   styleClass="auth-password"/>
+
+                    <TextField fx:id="confirmPasswordVisibleField"
+                               promptText="🔒 Re-enter your password"
+                               visible="false"
+                               managed="false"
+                               styleClass="auth-password"/>
+                </StackPane>
             </HBox>
         </VBox>
 
@@ -76,7 +93,7 @@
                 styleClass="auth-button"/>
 
         <HBox spacing="5.0">
-            <Label text="Already have an account?" styleClass="auth-subtitle"/>
+            <Label text="    Already have an account?" styleClass="auth-subtitle"/>
             <Label text="Log in"
                    onMouseClicked="#goToLogin"
                    styleClass="auth-link"/>

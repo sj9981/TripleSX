@@ -118,17 +118,32 @@ public class NetworkManager
         JSONObject request = new JSONObject();
         request.put("action", "get_profile");
         request.put("username", username);
-        request.put("loggedInUser", SessionManager.getInstance().getUsername()); // Added this
+        request.put("loggedInUser", SessionManager.getInstance().getUsername());
         return sendRequestObject(request);
     }
 
-    public JSONObject createTweet(String username, String content, String imagePath)
-    {
+    public JSONObject createTweet(String username, String content, String imagePath, int parentTweetId) {
         JSONObject request = new JSONObject();
         request.put("action", "create_tweet");
         request.put("username", username);
         request.put("content", content);
         request.put("image_path", imagePath == null ? "" : imagePath);
+        if (parentTweetId > 0) {
+            request.put("parent_tweet_id", parentTweetId);
+        }
+        return sendRequestObject(request);
+    }
+
+    public JSONObject createTweet(String username, String content, String imagePath)
+    {
+        return createTweet(username, content, imagePath, -1);
+    }
+
+    public JSONObject getTweetDetails(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "get_tweet_details");
+        request.put("tweet_id", tweetId);
+        request.put("username", SessionManager.getInstance().getUsername());
         return sendRequestObject(request);
     }
 
@@ -265,7 +280,7 @@ public class NetworkManager
                             Platform.runLater(() -> {
                                 HomeController controller = HomeController.getInstance();
                                 if (controller != null) {
-                                    controller.addTweetToFeed(message);
+                                    controller.addTweetToFeed(message, true);
                                 } else {
                                     System.err.println("[CLIENT] HomeController instance is null.");
                                 }
@@ -301,6 +316,7 @@ public class NetworkManager
         error.put("message", message);
         return error;
     }
+
     public JSONObject search(String query) {
         JSONObject request = new JSONObject();
         request.put("action", "search");
@@ -329,6 +345,22 @@ public class NetworkManager
         request.put("action", "unfollow");
         request.put("follower_username", follower);
         request.put("following_username", following);
+        return sendRequestObject(request);
+    }
+
+    public JSONObject likeTweet(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "like_tweet");
+        request.put("username", SessionManager.getInstance().getUsername());
+        request.put("tweet_id", tweetId);
+        return sendRequestObject(request);
+    }
+
+    public JSONObject unlikeTweet(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "unlike_tweet");
+        request.put("username", SessionManager.getInstance().getUsername());
+        request.put("tweet_id", tweetId);
         return sendRequestObject(request);
     }
 }

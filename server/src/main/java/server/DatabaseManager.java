@@ -9,7 +9,9 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "123456";
+    private static final String PASSWORD = "12345";
+    private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
+        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static Connection getConnection() throws SQLException
     {
@@ -124,12 +126,12 @@ public class DatabaseManager
         return false;
     }
 
-    public static boolean createTweet(String username, String content, String imagePath)
+    public static boolean createTweet(String username, String content, String imagePath, int parentTweetId)
     {
         int userId = getUserIdByUsername(username);
         if (userId == -1) return false;
 
-        String tweetSql = "INSERT INTO tweets (user_id, content) VALUES (?, ?)";
+        String tweetSql = "INSERT INTO tweets (user_id, content, parent_tweet_id) VALUES (?, ?, ?)";
         String mediaSql = "INSERT INTO tweet_media (tweet_id, media_path) VALUES (?, ?)";
 
         try (Connection conn = getConnection())
@@ -144,6 +146,11 @@ public class DatabaseManager
                 {
                     pstmt.setInt(1, userId);
                     pstmt.setString(2, content);
+                    if (parentTweetId > 0) {
+                        pstmt.setInt(3, parentTweetId);
+                    } else {
+                        pstmt.setNull(3, Types.INTEGER);
+                    }
 
                     int affectedRows = pstmt.executeUpdate();
                     if (affectedRows == 0)
@@ -166,13 +173,23 @@ public class DatabaseManager
                     }
                 }
 
-                if (!imagePath.isEmpty())
+                if (imagePath != null && !imagePath.isEmpty())
                 {
                     try (PreparedStatement pstmt = conn.prepareStatement(mediaSql))
                     {
                         pstmt.setInt(1, tweetId);
                         pstmt.setString(2, imagePath);
                         pstmt.executeUpdate();
+                    }
+                }
+
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("#(\\w+)");
+                java.util.regex.Matcher matcher = pattern.matcher(content);
+                while (matcher.find()) {
+                    String tag = matcher.group(1).toLowerCase();
+                    int hashtagId = getOrCreateHashtag(conn, tag);
+                    if (hashtagId != -1) {
+                        linkTweetHashtag(conn, tweetId, hashtagId);
                     }
                 }
 
@@ -195,6 +212,133 @@ public class DatabaseManager
             System.err.println("Database connection error: " + e.getMessage());
             return false;
         }
+    }
+
+    public static boolean createTweet(String username, String content, String imagePath) {
+        return createTweet(username, content, imagePath, -1);
+    }
+
+    private static int getOrCreateHashtag(Connection conn, String tag) throws SQLException {
+        String selectSql = "SELECT id FROM hashtags WHERE tag = ?";
+        try (PreparedStatement ps = conn.prepareStatement(selectSql)) {
+            ps.setString(1, tag);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("id");
+            }
+        }
+
+        String insertSql = "INSERT INTO hashtags (tag) VALUES (?) RETURNING id";
+        try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+            ps.setString(1, tag);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException ignored) {
+            try (PreparedStatement ps = conn.prepareStatement(selectSql)) {
+                ps.setString(1, tag);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) return rs.getInt("id");
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static void linkTweetHashtag(Connection conn, int tweetId, int hashtagId) throws SQLException {
+        String sql = "INSERT INTO tweet_hashtags (tweet_id, hashtag_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, tweetId);
+            ps.setInt(2, hashtagId);
+            ps.executeUpdate();
+        }
+    }
+
+    public static JSONObject getTweetDetails(int tweetId, String loggedInUsername) {
+        JSONObject result = new JSONObject();
+        int loggedInUserId = getUserIdByUsername(loggedInUsername);
+
+        String mainSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
+                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
+                "FROM tweets t " +
+                "JOIN users u ON t.user_id = u.id " +
+                "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
+                "WHERE t.id = ?";
+
+        String repliesSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
+                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
+                "FROM tweets t " +
+                "JOIN users u ON t.user_id = u.id " +
+                "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
+                "WHERE t.parent_tweet_id = ? " +
+                "ORDER BY t.created_at ASC";
+
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(mainSql)) {
+                ps.setInt(1, loggedInUserId);
+                ps.setInt(2, tweetId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        JSONObject tweet = new JSONObject();
+                        tweet.put("tweet_id", rs.getInt("tweet_id"));
+                        tweet.put("username", rs.getString("username"));
+                        tweet.put("display_name", rs.getString("display_name"));
+                        tweet.put("avatar_path", rs.getString("avatar_path") == null ? "" : rs.getString("avatar_path"));
+                        tweet.put("content", rs.getString("content"));
+
+                        Timestamp ts = rs.getTimestamp("created_at");
+                        tweet.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
+                        tweet.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
+                        tweet.put("like_count", rs.getInt("like_count"));
+                        tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                        tweet.put("reply_count", rs.getInt("reply_count"));
+
+                        result.put("tweet", tweet);
+                    } else {
+                        result.put("success", false);
+                        result.put("message", "Tweet not found.");
+                        return result;
+                    }
+                }
+            }
+
+            JSONArray replies = new JSONArray();
+            try (PreparedStatement ps = conn.prepareStatement(repliesSql)) {
+                ps.setInt(1, loggedInUserId);
+                ps.setInt(2, tweetId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        JSONObject reply = new JSONObject();
+                        reply.put("tweet_id", rs.getInt("tweet_id"));
+                        reply.put("username", rs.getString("username"));
+                        reply.put("display_name", rs.getString("display_name"));
+                        reply.put("avatar_path", rs.getString("avatar_path") == null ? "" : rs.getString("avatar_path"));
+                        reply.put("content", rs.getString("content"));
+
+                        Timestamp ts = rs.getTimestamp("created_at");
+                        reply.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
+                        reply.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
+                        reply.put("like_count", rs.getInt("like_count"));
+                        reply.put("is_liked", rs.getInt("is_liked") > 0);
+                        reply.put("reply_count", rs.getInt("reply_count"));
+
+                        replies.put(reply);
+                    }
+                }
+            }
+
+            result.put("success", true);
+            result.put("replies", replies);
+
+        } catch (SQLException e) {
+            result.put("success", false);
+            result.put("message", "Error getting tweet details: " + e.getMessage());
+        }
+
+        return result;
     }
 
     public static int getUserIdByUsername(String username)
@@ -322,48 +466,47 @@ public class DatabaseManager
         }
     }
 
-    public static JSONArray getUserTweets(String username)
-    {
+    public static JSONArray getUserTweets(String profileUsername, String loggedInUsername) {
         JSONArray tweets = new JSONArray();
+        int profileUserId = getUserIdByUsername(profileUsername);
+        int loggedInUserId = getUserIdByUsername(loggedInUsername);
 
-        int userId = getUserIdByUsername(username);
-        if (userId == -1)
-            return tweets;
+        if (profileUserId == -1) return tweets;
 
-        String sql =
-                "SELECT t.id AS tweet_id, t.content, m.media_path " +
-                        "FROM tweets t " +
-                        "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
-                        "WHERE t.user_id = ? " +
-                        "ORDER BY t.created_at DESC";
+        String sql = "SELECT t.id AS tweet_id, t.content, m.media_path, t.created_at, " +
+                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
+                "FROM tweets t " +
+                "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
+                "WHERE t.user_id = ? " +
+                "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql))
-        {
-            pstmt.setInt(1, userId);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, loggedInUserId);
+            pstmt.setInt(2, profileUserId);
 
-            try (ResultSet rs = pstmt.executeQuery())
-            {
-                while (rs.next())
-                {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
                     JSONObject tweet = new JSONObject();
                     tweet.put("tweet_id", rs.getInt("tweet_id"));
                     tweet.put("content", rs.getString("content"));
+                    tweet.put("imagePath", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
 
-                    String imagePath = rs.getString("media_path");
-                    if (imagePath == null)
-                        imagePath = "";
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
 
-                    tweet.put("imagePath", imagePath);
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                    tweet.put("reply_count", rs.getInt("reply_count"));
                     tweets.put(tweet);
                 }
             }
-        }
-        catch (SQLException e)
-        {
+        } catch (SQLException e) {
             System.err.println("Error retrieving user tweets: " + e.getMessage());
         }
-
         return tweets;
     }
 
@@ -379,16 +522,21 @@ public class DatabaseManager
                         "u.avatar_path, " +
                         "t.content, " +
                         "t.created_at, " +
-                        "tm.media_path " +
+                        "tm.media_path, " +
+                        "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                        "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = (SELECT id FROM users WHERE username = ?)) AS is_liked, " +
+                        "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                         "FROM tweets t " +
                         "JOIN users u ON t.user_id = u.id " +
                         "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
-                        "WHERE t.user_id = (SELECT id FROM users WHERE username = ?) " +
+                        "WHERE t.parent_tweet_id IS NULL AND (" +
+                        "   t.user_id = (SELECT id FROM users WHERE username = ?) " +
                         "   OR t.user_id IN ( " +
                         "       SELECT following_id " +
                         "       FROM follows " +
                         "       WHERE follower_id = (SELECT id FROM users WHERE username = ?) " +
                         "   ) " +
+                        ") " +
                         "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection();
@@ -396,6 +544,7 @@ public class DatabaseManager
         {
             ps.setString(1, username);
             ps.setString(2, username);
+            ps.setString(3, username);
 
             try (ResultSet rs = ps.executeQuery())
             {
@@ -406,16 +555,22 @@ public class DatabaseManager
                     tweet.put("tweet_id", rs.getInt("tweet_id"));
                     tweet.put("username", rs.getString("username"));
                     tweet.put("display_name", rs.getString("display_name"));
-                    tweet.put("avatar_path", rs.getString("avatar_path"));
+                    tweet.put("avatar_path", rs.getString("avatar_path") == null ? "" : rs.getString("avatar_path"));
                     tweet.put("content", rs.getString("content"));
-                    tweet.put("created_at", rs.getTimestamp("created_at").toString());
+
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
 
                     String image = rs.getString("media_path");
                     if (image == null) {
                         image = "";
                     }
-
                     tweet.put("image_path", image);
+
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                    tweet.put("reply_count", rs.getInt("reply_count"));
                     tweets.put(tweet);
                 }
             }
@@ -489,21 +644,25 @@ public class DatabaseManager
         JSONArray users = new JSONArray();
         JSONArray tweets = new JSONArray();
 
-        String searchQuery = "%" + query + "%";
+        String cleanQuery = query.startsWith("#") ? query.substring(1) : query;
+        String searchQuery = "%" + cleanQuery + "%";
 
         String userSql = "SELECT username, display_name, bio, avatar_path FROM users " +
                          "WHERE username ILIKE ? OR display_name ILIKE ?";
 
-        String tweetSql = "SELECT u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path " +
+        String tweetSql = "SELECT DISTINCT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
+                          "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                          "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                           "FROM tweets t " +
                           "JOIN users u ON t.user_id = u.id " +
                           "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
-                          "WHERE t.content ILIKE ? " +
+                          "LEFT JOIN tweet_hashtags th ON th.tweet_id = t.id " +
+                          "LEFT JOIN hashtags h ON h.id = th.hashtag_id " +
+                          "WHERE t.content ILIKE ? OR h.tag ILIKE ? " +
                           "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection())
         {
-
             try (PreparedStatement pstmt = conn.prepareStatement(userSql))
             {
                 pstmt.setString(1, searchQuery);
@@ -522,21 +681,26 @@ public class DatabaseManager
                 }
             }
 
-
             try (PreparedStatement pstmt = conn.prepareStatement(tweetSql))
             {
                 pstmt.setString(1, searchQuery);
+                pstmt.setString(2, searchQuery);
                 try (ResultSet rs = pstmt.executeQuery())
                 {
                     while (rs.next())
                     {
                         JSONObject tweet = new JSONObject();
+                        tweet.put("tweet_id", rs.getInt("tweet_id"));
                         tweet.put("username", rs.getString("username"));
                         tweet.put("display_name", rs.getString("display_name"));
                         tweet.put("avatar_path", rs.getString("avatar_path") != null ? rs.getString("avatar_path") : "");
                         tweet.put("content", rs.getString("content"));
-                        tweet.put("created_at", rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toString() : "");
+
+                        Timestamp ts = rs.getTimestamp("created_at");
+                        tweet.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
                         tweet.put("image_path", rs.getString("media_path") != null ? rs.getString("media_path") : "");
+                        tweet.put("like_count", rs.getInt("like_count"));
+                        tweet.put("reply_count", rs.getInt("reply_count"));
                         tweets.put(tweet);
                     }
                 }
@@ -554,7 +718,7 @@ public class DatabaseManager
         }
         return result;
     }
-    //To make sure user has access to the tweet to delete it
+
     public static boolean deleteTweet(int tweetId, String username) {
         String sql = "DELETE FROM tweets WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)";
         try (Connection conn = getConnection();
@@ -566,5 +730,49 @@ public class DatabaseManager
             System.err.println("Error deleting tweet: " + e.getMessage());
             return false;
         }
+    }
+
+    public static boolean likeTweet(String username, int tweetId) {
+        int userId = getUserIdByUsername(username);
+        if (userId == -1) return false;
+
+        String sql = "INSERT INTO likes (user_id, tweet_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, tweetId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error liking tweet: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean unlikeTweet(String username, int tweetId) {
+        int userId = getUserIdByUsername(username);
+        String sql = "DELETE FROM likes WHERE user_id = ? AND tweet_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, tweetId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error unliking tweet: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static int getLikeCount(int tweetId) {
+        String sql = "SELECT COUNT(*) FROM likes WHERE tweet_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, tweetId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            return 0;
+        }
+        return 0;
     }
 }

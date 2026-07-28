@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-
 public class ProfileController
 {
     @FXML private Button editProfileButton;
@@ -51,7 +50,7 @@ public class ProfileController
         Circle clip = new Circle(50, 50, 50);
         avatarImageView.setClip(clip);
     }
-    @FXML private Button followButton; // Link to FXML
+    @FXML private Button followButton;
     private boolean isFollowingCurrent;
 
     public void initUserData(String username)
@@ -63,15 +62,12 @@ public class ProfileController
 
         String loggedInUser = SessionManager.getInstance().getUsername();
 
-        // Logic to switch buttons
         if (loggedInUser != null && loggedInUser.equalsIgnoreCase(username)) {
-            // My profile
             editProfileButton.setVisible(true);
             editProfileButton.setManaged(true);
             followButton.setVisible(false);
             followButton.setManaged(false);
         } else {
-            // someone else's profile
             editProfileButton.setVisible(false);
             editProfileButton.setManaged(false);
             followButton.setVisible(true);
@@ -90,7 +86,6 @@ public class ProfileController
                 return;
             }
 
-            // Get follow status from server
             this.isFollowingCurrent = response.optBoolean("isFollowing", false);
             updateFollowButtonUI();
 
@@ -103,7 +98,6 @@ public class ProfileController
 
             loadAvatarImage(user.optString("avatarPath", ""));
 
-            // Load Tweets
             JSONArray tweets = response.optJSONArray("tweets");
             userTweetsContainer.getChildren().clear();
             if (tweets != null) {
@@ -120,11 +114,9 @@ public class ProfileController
     private void updateFollowButtonUI() {
         if (isFollowingCurrent) {
             followButton.setText("Unfollow");
-            // Dark style for Unfollow
             followButton.setStyle("-fx-background-color: black; -fx-text-fill: white; -fx-border-color: #536471; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;");
         } else {
             followButton.setText("Follow");
-            // Bright white style for Follow
             followButton.setStyle("-fx-background-color: white; -fx-text-fill: black; -fx-background-radius: 20; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;");
         }
     }
@@ -142,11 +134,9 @@ public class ProfileController
         }
 
         if (response != null && response.optBoolean("success", false)) {
-            // Toggle the local state
             isFollowingCurrent = !isFollowingCurrent;
             updateFollowButtonUI();
 
-            // Refresh profile data to update the "Followers" count label
             loadProfileData();
         } else {
             System.err.println("Follow/Unfollow action failed: " + (response != null ? response.optString("message") : "No response"));
@@ -162,11 +152,9 @@ public class ProfileController
             if (image != null && !image.isError())
             {
                 avatarImageView.setImage(image);
-                System.out.println("Avatar loaded successfully.");
             }
             else
             {
-                System.out.println("Avatar image was null or invalid. Using default.");
                 setDefaultAvatar();
             }
 
@@ -182,31 +170,23 @@ public class ProfileController
     {
         if (path == null || path.trim().isEmpty())
         {
-            System.out.println("Avatar path is empty.");
             return loadDefaultAvatarImage();
         }
-
-        System.out.println("Trying avatar path: " + path);
 
         try
         {
             File file = new File(path);
-            System.out.println("absolute path = " + file.getAbsolutePath());
-            System.out.println("file exists = " + file.exists());
-
             if (file.exists())
             {
                 Image image = new Image(file.toURI().toString(), false);
                 if (!image.isError())
                 {
-                    System.out.println("Avatar loaded from file system.");
                     return image;
                 }
             }
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            System.out.println("Failed loading avatar from file system.");
         }
 
         try
@@ -219,14 +199,12 @@ public class ProfileController
                 Image image = new Image(stream);
                 if (!image.isError())
                 {
-                    System.out.println("Avatar loaded from resources: " + resourcePath);
                     return image;
                 }
             }
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            System.out.println("Failed loading avatar from resources.");
         }
 
         try
@@ -239,17 +217,14 @@ public class ProfileController
                 Image image = new Image(stream);
                 if (!image.isError())
                 {
-                    System.out.println("Avatar loaded from resources by filename: " + fileNameOnly);
                     return image;
                 }
             }
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            System.out.println("Failed loading avatar by filename from resources.");
         }
 
-        System.out.println("Avatar not found anywhere. Falling back to default.");
         return loadDefaultAvatarImage();
     }
 
@@ -297,45 +272,39 @@ public class ProfileController
         int tweetId = tweetJson.optInt("tweet_id");
         String content = tweetJson.optString("content", "");
         String imagePath = tweetJson.optString("imagePath", "");
+        int likeCount = tweetJson.optInt("like_count", 0);
+        boolean isLiked = tweetJson.optBoolean("is_liked", false);
 
         VBox tweetBox = new VBox(10);
-        tweetBox.setStyle("-fx-padding: 15; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0;");
+        tweetBox.getStyleClass().add("tweet-card");
+        tweetBox.setStyle("-fx-cursor: hand;");
 
         HBox topRow = new HBox();
         Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: white; -fx-font-size: 15px;");
+        contentLabel.getStyleClass().add("content-label");
         contentLabel.setWrapText(true);
 
-        // Spacer
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
-        javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-
+        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
         topRow.getChildren().addAll(contentLabel, spacer);
 
-        // Show delete button only if you have access
         String loggedInUser = SessionManager.getInstance().getUsername();
         if (loggedInUser != null && loggedInUser.equalsIgnoreCase(currentUsername)) {
             Button delBtn = new Button("🗑");
-            delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14;");
-            delBtn.setOnMouseEntered(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-cursor: hand; -fx-font-size: 14;"));
-            delBtn.setOnMouseExited(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14;"));
-
+            delBtn.getStyleClass().add("delete-button");
             delBtn.setOnAction(e -> {
                 JSONObject res = NetworkManager.getInstance().deleteTweet(tweetId);
-                if (res.optBoolean("success")) {
-                    userTweetsContainer.getChildren().remove(tweetBox);
-                }
+                if (res.optBoolean("success")) userTweetsContainer.getChildren().remove(tweetBox);
             });
             topRow.getChildren().add(delBtn);
         }
-
         tweetBox.getChildren().add(topRow);
 
-        if (!imagePath.isEmpty()) {
+        if (imagePath != null && !imagePath.isEmpty()) {
             try {
-                java.io.File file = new java.io.File(imagePath);
+                File file = new File(imagePath);
                 if (file.exists()) {
-                    ImageView imageView = new ImageView(new javafx.scene.image.Image(file.toURI().toString()));
+                    ImageView imageView = new ImageView(new Image(file.toURI().toString()));
                     imageView.setFitWidth(350);
                     imageView.setPreserveRatio(true);
                     tweetBox.getChildren().add(imageView);
@@ -343,9 +312,59 @@ public class ProfileController
             } catch (Exception ignored) {}
         }
 
+        Button likeBtn = new Button();
+        setupLikeButtonStyle(likeBtn, isLiked, likeCount);
+
+        likeBtn.setOnAction(e -> {
+            if (likeBtn.getText().contains("❤")) {
+                JSONObject res = NetworkManager.getInstance().unlikeTweet(tweetId);
+                if (res.optBoolean("success")) {
+                    int currentNum = Integer.parseInt(likeBtn.getText().replaceAll("[^0-9]", ""));
+                    setupLikeButtonStyle(likeBtn, false, currentNum - 1);
+                }
+            } else {
+                JSONObject res = NetworkManager.getInstance().likeTweet(tweetId);
+                if (res.optBoolean("success")) {
+                    int currentNum = Integer.parseInt(likeBtn.getText().replaceAll("[^0-9]", ""));
+                    setupLikeButtonStyle(likeBtn, true, currentNum + 1);
+                }
+            }
+        });
+
+        tweetBox.getChildren().add(likeBtn);
+
+        tweetBox.setOnMouseClicked(event -> {
+            if (event.getTarget() instanceof Button) return;
+            openTweetDetails(tweetId);
+        });
+
         userTweetsContainer.getChildren().add(tweetBox);
     }
 
+    private void openTweetDetails(int tweetId) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/tweet-details.fxml"));
+            Parent root = loader.load();
+            TweetDetailsController controller = loader.getController();
+            controller.setTweetId(tweetId);
+
+            Stage stage = (Stage) displayNameLabel.getScene().getWindow();
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
+            stage.setTitle("X Clone - Post");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setupLikeButtonStyle(Button btn, boolean isLiked, int count) {
+        if (isLiked) {
+            btn.setText("❤ " + count);
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-cursor: hand; -fx-font-size: 14px;");
+        } else {
+            btn.setText("♡ " + count);
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14px;");
+        }
+    }
 
     @FXML
     private void handleBack()
@@ -356,7 +375,6 @@ public class ProfileController
             Parent root = loader.load();
 
             HomeController homeController = loader.getController();
-            // FIX: Restore Home feed context using the actual logged-in user's username
             homeController.setUserInfo(SessionManager.getInstance().getUsername());
 
             Stage stage = (Stage) displayNameLabel.getScene().getWindow();
