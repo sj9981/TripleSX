@@ -780,4 +780,41 @@ public class DatabaseManager
         }
         return 0;
     }
+
+    public static JSONArray getFollowersList(String username) {
+        JSONArray list = new JSONArray();
+        String sql = "SELECT u.username, u.display_name, u.bio, u.avatar_path FROM users u " +
+                "JOIN follows f ON u.id = f.follower_id " +
+                "WHERE f.following_id = (SELECT id FROM users WHERE username = ?)";
+        return fetchUserList(sql, username);
+    }
+
+    public static JSONArray getFollowingList(String username) {
+        JSONArray list = new JSONArray();
+        String sql = "SELECT u.username, u.display_name, u.bio, u.avatar_path FROM users u " +
+                "JOIN follows f ON u.id = f.following_id " +
+                "WHERE f.follower_id = (SELECT id FROM users WHERE username = ?)";
+        return fetchUserList(sql, username);
+    }
+
+    private static JSONArray fetchUserList(String sql, String username) {
+        JSONArray list = new JSONArray();
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject user = new JSONObject();
+                    user.put("username", rs.getString("username"));
+                    user.put("displayName", rs.getString("display_name"));
+                    user.put("bio", rs.getString("bio") == null ? "" : rs.getString("bio"));
+                    user.put("avatarPath", rs.getString("avatar_path") == null ? "" : rs.getString("avatar_path"));
+                    list.put(user);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

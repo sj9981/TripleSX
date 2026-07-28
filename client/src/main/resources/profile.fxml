@@ -84,12 +84,12 @@
 
         <!-- Stats (Followers/Following) -->
         <HBox spacing="20" style="-fx-translate-y: -10;">
-            <HBox spacing="5">
+            <HBox spacing="5" onMouseClicked="#showFollowing" style="-fx-cursor: hand;">
                 <Label fx:id="followingCountLabel" text="0" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
                 <Label text="Following" style="-fx-text-fill: #71767b;"/>
             </HBox>
 
-            <HBox spacing="5">
+            <HBox spacing="5" onMouseClicked="#showFollowers" style="-fx-cursor: hand;">
                 <Label fx:id="followerCountLabel" text="0" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
                 <Label text="Followers" style="-fx-text-fill: #71767b;"/>
             </HBox>

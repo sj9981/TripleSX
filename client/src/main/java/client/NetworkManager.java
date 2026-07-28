@@ -363,4 +363,18 @@ public class NetworkManager
         request.put("tweet_id", tweetId);
         return sendRequestObject(request);
     }
+
+    public JSONObject getFollowersList(String username) {
+        JSONObject request = new JSONObject();
+        request.put("action", "get_followers_list");
+        request.put("username", username);
+        return sendRequestObject(request);
+    }
+
+    public JSONObject getFollowingList(String username) {
+        JSONObject request = new JSONObject();
+        request.put("action", "get_following_list");
+        request.put("username", username);
+        return sendRequestObject(request);
+    }
 }
