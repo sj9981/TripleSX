@@ -331,4 +331,20 @@ public class NetworkManager
         request.put("following_username", following);
         return sendRequestObject(request);
     }
+
+    public JSONObject likeTweet(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "like_tweet");
+        request.put("username", SessionManager.getInstance().getUsername());
+        request.put("tweet_id", tweetId);
+        return sendRequestObject(request);
+    }
+
+    public JSONObject unlikeTweet(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "unlike_tweet");
+        request.put("username", SessionManager.getInstance().getUsername());
+        request.put("tweet_id", tweetId);
+        return sendRequestObject(request);
+    }
 }

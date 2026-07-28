@@ -57,6 +57,12 @@ public class RequestProcessor {
                 case "delete_tweet":
                     response = handleDeleteTweet(request);
                     break;
+                case "like_tweet":
+                    response = handleLikeTweet(request);
+                    break;
+                case "unlike_tweet":
+                    response = handleUnlikeTweet(request);
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
@@ -254,7 +260,7 @@ public class RequestProcessor {
             userProfileJson.put("followingCount", followingCount);
 
             res.put("user", userProfileJson);
-            res.put("tweets", DatabaseManager.getUserTweets(username));
+            res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser));
 
         } catch (org.json.JSONException e) {
             res.put("success", false);
@@ -321,5 +327,19 @@ public class RequestProcessor {
         res.put("success", success);
         res.put("message", success ? "Tweet deleted successfully" : "Unauthorized or error.");
         return res;
+    }
+
+    private JSONObject handleLikeTweet(JSONObject request) {
+        String username = request.getString("username");
+        int tweetId = request.getInt("tweet_id");
+        boolean success = DatabaseManager.likeTweet(username, tweetId);
+        return new JSONObject().put("success", success).put("message", success ? "Liked" : "Error");
+    }
+
+    private JSONObject handleUnlikeTweet(JSONObject request) {
+        String username = request.getString("username");
+        int tweetId = request.getInt("tweet_id");
+        boolean success = DatabaseManager.unlikeTweet(username, tweetId);
+        return new JSONObject().put("success", success).put("message", success ? "Unliked" : "Error");
     }
 }

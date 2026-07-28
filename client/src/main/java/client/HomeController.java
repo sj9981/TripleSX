@@ -115,21 +115,29 @@ public class HomeController {
                     JSONObject tweetObj = tweets.getJSONObject(i);
                     addTweetToFeed(tweetObj);
                 }
-            } else {
+            }
+            else
+            {
                 System.err.println("Failed to load tweets: " +
                         (response != null ? response.optString("message") : "null response"));
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             e.printStackTrace();
         }
     }
 
-    public void addTweetToFeed(JSONObject tweetJson) {
+    public void addTweetToFeed(JSONObject tweetJson)
+    {
         String user = tweetJson.optString("username", tweetJson.optString("author", "Unknown"));
         String text = tweetJson.optString("content", "");
         String createdAt = tweetJson.optString("created_at", "");
         String imagePath = tweetJson.optString("image_path", tweetJson.optString("imagePath", ""));
         int tweetId = tweetJson.optInt("tweet_id", -1);
+
+        int likeCount = tweetJson.optInt("like_count", 0);
+        boolean isLiked = tweetJson.optBoolean("is_liked", false);
 
         VBox card = new VBox(8);
         card.getStyleClass().add("tweet-card");
@@ -139,13 +147,14 @@ public class HomeController {
 
         Circle avatar = new Circle(18);
         Image avatarImg = getUserAvatar(user);
-
-        if (avatarImg != null) {
+        if (avatarImg != null)
+        {
             avatar.setFill(new ImagePattern(avatarImg));
-        } else {
+        }
+        else
+        {
             avatar.setFill(Color.web("#333333"));
         }
-
         avatar.setStroke(Color.web("#2f3336"));
         avatar.setStrokeWidth(1.0);
 
@@ -156,17 +165,14 @@ public class HomeController {
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
 
-        // Delete button logic
         String currentUser = SessionManager.getInstance().getUsername();
-        if (user.equalsIgnoreCase(currentUser) && tweetId != -1) {
-            // Push trash can to the right
+        if (user.equalsIgnoreCase(currentUser) && tweetId != -1)
+        {
             javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
             javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-
             Button deleteBtn = new Button("🗑");
             deleteBtn.getStyleClass().add("delete-button");
             deleteBtn.setOnAction(event -> confirmAndDelete(tweetId, card));
-
             header.getChildren().addAll(spacer, deleteBtn);
         }
 
@@ -176,10 +182,12 @@ public class HomeController {
 
         card.getChildren().addAll(header, contentLabel);
 
-        if (imagePath != null && !imagePath.trim().isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
+        if (imagePath != null && !imagePath.trim().isEmpty() && !"null".equalsIgnoreCase(imagePath))
+        {
             try {
                 java.io.File imageFile = new java.io.File(imagePath);
-                if (imageFile.exists()) {
+                if (imageFile.exists())
+                {
                     ImageView imageView = new ImageView(new javafx.scene.image.Image(imageFile.toURI().toString()));
                     imageView.setFitWidth(400);
                     imageView.setPreserveRatio(true);
@@ -188,11 +196,53 @@ public class HomeController {
             } catch (Exception ignored) {}
         }
 
+        Button likeBtn = new Button();
+        updateLikeButtonUI(likeBtn, isLiked, likeCount);
+
+        likeBtn.setOnAction(e -> {
+            if (likeBtn.getText().contains("\u2661 "))
+            {
+                JSONObject res = NetworkManager.getInstance().likeTweet(tweetId);
+                if (res.optBoolean("success"))
+                {
+                    int currentNum = Integer.parseInt(likeBtn.getText().replaceAll("[^0-9]", ""));
+                    updateLikeButtonUI(likeBtn, true, currentNum + 1);
+                }
+            }
+            else
+            {
+                JSONObject res = NetworkManager.getInstance().unlikeTweet(tweetId);
+                if (res.optBoolean("success"))
+                {
+                    int currentNum = Integer.parseInt(likeBtn.getText().replaceAll("[^0-9]", ""));
+                    updateLikeButtonUI(likeBtn, false, currentNum - 1);
+                }
+            }
+        });
+
+        HBox actionsBar = new HBox(likeBtn);
+        actionsBar.setPadding(new javafx.geometry.Insets(5, 0, 5, 0));
+        card.getChildren().add(actionsBar);
+
         Label timeLabel = new Label(createdAt);
         timeLabel.getStyleClass().add("time-label");
         card.getChildren().add(timeLabel);
 
         feedContainer.getChildren().add(0, card);
+    }
+
+    private void updateLikeButtonUI(Button btn, boolean isLiked, int count)
+    {
+        if (isLiked)
+        {
+            btn.setText("\u2764\ufe0f " + count);
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #f4212e; -fx-cursor: hand; -fx-font-size: 14px;");
+        }
+        else
+        {
+            btn.setText("\u2661 " + count);
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand; -fx-font-size: 14px;");
+        }
     }
 
     private void confirmAndDelete(int tweetId, VBox card) {

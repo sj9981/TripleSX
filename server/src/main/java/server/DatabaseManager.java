@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "123456";
+    private static final String PASSWORD = "Sa123456*";
 
     public static Connection getConnection() throws SQLException
     {
@@ -322,48 +322,42 @@ public class DatabaseManager
         }
     }
 
-    public static JSONArray getUserTweets(String username)
-    {
+    public static JSONArray getUserTweets(String profileUsername, String loggedInUsername) {
         JSONArray tweets = new JSONArray();
+        int profileUserId = getUserIdByUsername(profileUsername);
+        int loggedInUserId = getUserIdByUsername(loggedInUsername);
 
-        int userId = getUserIdByUsername(username);
-        if (userId == -1)
-            return tweets;
+        if (profileUserId == -1) return tweets;
 
-        String sql =
-                "SELECT t.id AS tweet_id, t.content, m.media_path " +
-                        "FROM tweets t " +
-                        "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
-                        "WHERE t.user_id = ? " +
-                        "ORDER BY t.created_at DESC";
+        // کوئری اصلاح شده برای دریافت تعداد لایک و وضعیت لایک کاربر جاری
+        String sql = "SELECT t.id AS tweet_id, t.content, m.media_path, t.created_at, " +
+                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked " +
+                "FROM tweets t " +
+                "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
+                "WHERE t.user_id = ? " +
+                "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql))
-        {
-            pstmt.setInt(1, userId);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, loggedInUserId);
+            pstmt.setInt(2, profileUserId);
 
-            try (ResultSet rs = pstmt.executeQuery())
-            {
-                while (rs.next())
-                {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
                     JSONObject tweet = new JSONObject();
                     tweet.put("tweet_id", rs.getInt("tweet_id"));
                     tweet.put("content", rs.getString("content"));
-
-                    String imagePath = rs.getString("media_path");
-                    if (imagePath == null)
-                        imagePath = "";
-
-                    tweet.put("imagePath", imagePath);
+                    tweet.put("imagePath", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
+                    tweet.put("created_at", rs.getTimestamp("created_at").toString());
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
                     tweets.put(tweet);
                 }
             }
-        }
-        catch (SQLException e)
-        {
+        } catch (SQLException e) {
             System.err.println("Error retrieving user tweets: " + e.getMessage());
         }
-
         return tweets;
     }
 
@@ -379,7 +373,11 @@ public class DatabaseManager
                         "u.avatar_path, " +
                         "t.content, " +
                         "t.created_at, " +
-                        "tm.media_path " +
+                        "tm.media_path, " +
+                        // اضافه شده: شمارش لایک‌های این تویت
+                        "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                        // اضافه شده: آیا کاربر فعلی این تویت را لایک کرده؟ (بر اساس یوزرنمی که ورودی متد است)
+                        "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = (SELECT id FROM users WHERE username = ?)) AS is_liked " +
                         "FROM tweets t " +
                         "JOIN users u ON t.user_id = u.id " +
                         "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
@@ -394,8 +392,10 @@ public class DatabaseManager
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql))
         {
-            ps.setString(1, username);
-            ps.setString(2, username);
+            // حالا ۳ تا علامت سوال داریم، پس ۳ بار username را تنظیم می‌کنیم
+            ps.setString(1, username); // برای زیرکوئری is_liked
+            ps.setString(2, username); // برای تویت‌های خودم
+            ps.setString(3, username); // برای تویت‌های فالووینگ‌ها
 
             try (ResultSet rs = ps.executeQuery())
             {
@@ -414,8 +414,12 @@ public class DatabaseManager
                     if (image == null) {
                         image = "";
                     }
-
                     tweet.put("image_path", image);
+
+                    // اضافه کردن اطلاعات لایک به آبجکت تویت برای فرستادن به کلاینت
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0); // اگر 1 بود یعنی true، اگر 0 بود یعنی false
+
                     tweets.put(tweet);
                 }
             }
@@ -566,5 +570,49 @@ public class DatabaseManager
             System.err.println("Error deleting tweet: " + e.getMessage());
             return false;
         }
+    }
+
+    public static boolean likeTweet(String username, int tweetId) {
+        int userId = getUserIdByUsername(username);
+        if (userId == -1) return false;
+
+        String sql = "INSERT INTO likes (user_id, tweet_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, tweetId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error liking tweet: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean unlikeTweet(String username, int tweetId) {
+        int userId = getUserIdByUsername(username);
+        String sql = "DELETE FROM likes WHERE user_id = ? AND tweet_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, tweetId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error unliking tweet: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static int getLikeCount(int tweetId) {
+        String sql = "SELECT COUNT(*) FROM likes WHERE tweet_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, tweetId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            return 0;
+        }
+        return 0;
     }
 }

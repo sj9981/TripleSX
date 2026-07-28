@@ -61,9 +61,8 @@
                 onAction="#handleLogin"
                 styleClass="auth-button"/>
 
-        <!-- Register -->
         <HBox spacing="5.0">
-            <Label text="Don't have an account?"
+            <Label text="    Don't have an account?"
                    styleClass="auth-subtitle"/>
             <Label text="Sign up"
                    onMouseClicked="#handleRegister"
