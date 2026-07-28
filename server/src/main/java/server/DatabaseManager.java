@@ -307,6 +307,21 @@ public class DatabaseManager
         return 0;
     }
 
+    public static boolean isFollowing(String followerUsername, String followingUsername) {
+        String sql = "SELECT 1 FROM follows WHERE follower_id = (SELECT id FROM users WHERE username = ?) " +
+                "AND following_id = (SELECT id FROM users WHERE username = ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, followerUsername);
+            pstmt.setString(2, followingUsername);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     public static JSONArray getUserTweets(String username)
     {
         JSONArray tweets = new JSONArray();

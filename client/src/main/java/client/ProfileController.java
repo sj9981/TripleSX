@@ -51,6 +51,8 @@ public class ProfileController
         Circle clip = new Circle(50, 50, 50);
         avatarImageView.setClip(clip);
     }
+    @FXML private Button followButton; // Link to FXML
+    private boolean isFollowingCurrent;
 
     public void initUserData(String username)
     {
@@ -58,61 +60,96 @@ public class ProfileController
 
         setupAvatarView();
         setDefaultAvatar();
-        loadProfileData();
 
         String loggedInUser = SessionManager.getInstance().getUsername();
+
+        // Logic to switch buttons
         if (loggedInUser != null && loggedInUser.equalsIgnoreCase(username)) {
+            // My profile
             editProfileButton.setVisible(true);
             editProfileButton.setManaged(true);
+            followButton.setVisible(false);
+            followButton.setManaged(false);
         } else {
+            // someone else's profile
             editProfileButton.setVisible(false);
             editProfileButton.setManaged(false);
+            followButton.setVisible(true);
+            followButton.setManaged(true);
         }
+
+        loadProfileData();
     }
 
-    private void loadProfileData()
-    {
-        try
-        {
+    private void loadProfileData() {
+        try {
             JSONObject response = NetworkManager.getInstance().getUserProfile(currentUsername);
-            System.out.println("profile response = " + response.toString(2));
 
-            if (!response.optBoolean("success", false))
-            {
+            if (!response.optBoolean("success", false)) {
                 System.err.println("Profile request failed.");
                 return;
             }
 
-            JSONObject user = response.getJSONObject("user");
+            // Get follow status from server
+            this.isFollowingCurrent = response.optBoolean("isFollowing", false);
+            updateFollowButtonUI();
 
+            JSONObject user = response.getJSONObject("user");
             displayNameLabel.setText(user.optString("displayName", "No Name"));
             usernameLabel.setText("@" + user.optString("username", currentUsername));
             bioLabel.setText(user.optString("bio", "No bio yet..."));
             followerCountLabel.setText(String.valueOf(user.optInt("followerCount", 0)));
             followingCountLabel.setText(String.valueOf(user.optInt("followingCount", 0)));
 
-            String avatarPath = user.optString("avatarPath", "");
-            System.out.println("avatarPath from json = " + avatarPath);
+            loadAvatarImage(user.optString("avatarPath", ""));
 
-            loadAvatarImage(avatarPath);
-
+            // Load Tweets
             JSONArray tweets = response.optJSONArray("tweets");
             userTweetsContainer.getChildren().clear();
-
-            if (tweets != null)
-            {
-                for (int i = 0; i < tweets.length(); i++)
-                {
+            if (tweets != null) {
+                for (int i = 0; i < tweets.length(); i++) {
                     addTweetToUI(tweets.getJSONObject(i));
                 }
             }
-
-
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
             setDefaultAvatar();
+        }
+    }
+
+    private void updateFollowButtonUI() {
+        if (isFollowingCurrent) {
+            followButton.setText("Unfollow");
+            // Dark style for Unfollow
+            followButton.setStyle("-fx-background-color: black; -fx-text-fill: white; -fx-border-color: #536471; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;");
+        } else {
+            followButton.setText("Follow");
+            // Bright white style for Follow
+            followButton.setStyle("-fx-background-color: white; -fx-text-fill: black; -fx-background-radius: 20; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;");
+        }
+    }
+
+    @FXML
+    private void handleFollowAction() {
+        String loggedInUser = SessionManager.getInstance().getUsername();
+        if (loggedInUser == null) return;
+
+        JSONObject response;
+        if (isFollowingCurrent) {
+            response = NetworkManager.getInstance().unfollowUser(loggedInUser, currentUsername);
+        } else {
+            response = NetworkManager.getInstance().followUser(loggedInUser, currentUsername);
+        }
+
+        if (response != null && response.optBoolean("success", false)) {
+            // Toggle the local state
+            isFollowingCurrent = !isFollowingCurrent;
+            updateFollowButtonUI();
+
+            // Refresh profile data to update the "Followers" count label
+            loadProfileData();
+        } else {
+            System.err.println("Follow/Unfollow action failed: " + (response != null ? response.optString("message") : "No response"));
         }
     }
 
