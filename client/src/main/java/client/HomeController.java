@@ -12,8 +12,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
+import javafx.stage.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -197,19 +196,53 @@ public class HomeController {
     }
 
     private void confirmAndDelete(int tweetId, VBox card) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Tweet");
-        alert.setHeaderText(null);
-        alert.setContentText("Are you sure you want to delete this tweet?");
+        Stage modal = new Stage();
+        modal.initModality(Modality.APPLICATION_MODAL); // Blocks background clicks
+        modal.initStyle(StageStyle.TRANSPARENT);       // Removes system title bar
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                JSONObject res = NetworkManager.getInstance().deleteTweet(tweetId);
-                if (res.optBoolean("success")) {
-                    feedContainer.getChildren().remove(card);
-                }
+        //UI
+        VBox container = new VBox(20);
+        container.getStyleClass().add("delete-modal-pane");
+        container.setPrefWidth(320);
+
+        Label title = new Label("Delete post?");
+        title.getStyleClass().add("delete-modal-title");
+
+        Label body = new Label("This can’t be undone and it will be removed from your profile, the timeline of any accounts that follow you, and from search results.");
+        body.getStyleClass().add("delete-modal-body");
+        body.setWrapText(true);
+
+        Button deleteBtn = new Button("Delete");
+        deleteBtn.getStyleClass().add("confirm-delete-button");
+        deleteBtn.setMaxWidth(Double.MAX_VALUE);
+        deleteBtn.setOnAction(e -> {
+            JSONObject res = NetworkManager.getInstance().deleteTweet(tweetId);
+            if (res.optBoolean("success")) {
+                feedContainer.getChildren().remove(card);
             }
+            modal.close();
         });
+
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.getStyleClass().add("cancel-delete-button");
+        cancelBtn.setMaxWidth(Double.MAX_VALUE);
+        cancelBtn.setOnAction(e -> modal.close());
+
+        container.getChildren().addAll(title, body, deleteBtn, cancelBtn);
+
+        //Show
+        Scene scene = new Scene(container);
+        scene.setFill(Color.TRANSPARENT); // Makes corners look rounded
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+
+        modal.setScene(scene);
+
+        // Center it.
+        Window owner = feedContainer.getScene().getWindow();
+        modal.setX(owner.getX() + (owner.getWidth() - 320) / 2);
+        modal.setY(owner.getY() + (owner.getHeight() - 400) / 2);
+
+        modal.show();
     }
 
     private Image getUserAvatar(String user) {
