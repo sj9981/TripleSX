@@ -224,25 +224,49 @@ public class HomeController {
 
         // Like Button
         Button likeBtn = new Button();
-        updateLikeButtonUI(likeBtn, isLikedByMe, likeCount);
+        final int[] localLikeCount = {likeCount};
+        final boolean[] localIsLiked = {isLikedByMe};
+
+        updateLikeButtonUI(likeBtn, localIsLiked[0], localLikeCount[0]);
+
         likeBtn.setOnAction(e -> {
             e.consume();
-            if (isLikedByMe) {
-                NetworkManager.getInstance().unlikeTweet(originalContentId);
+            if (localIsLiked[0]) {
+                if (NetworkManager.getInstance().unlikeTweet(originalContentId).optBoolean("success")) {
+                    localIsLiked[0] = false;
+                    localLikeCount[0]--;
+                    updateLikeButtonUI(likeBtn, localIsLiked[0], localLikeCount[0]);
+                }
             } else {
-                NetworkManager.getInstance().likeTweet(originalContentId);
+                if (NetworkManager.getInstance().likeTweet(originalContentId).optBoolean("success")) {
+                    localIsLiked[0] = true;
+                    localLikeCount[0]++;
+                    updateLikeButtonUI(likeBtn, localIsLiked[0], localLikeCount[0]);
+                }
             }
         });
 
         // Retweet Button
-        Button retweetBtn = new Button("🔄 " + rtCount);
-        updateRetweetButtonUI(retweetBtn, isRetweetedByMe);
+        Button retweetBtn = new Button();
+        final int[] localRtCount = {rtCount};
+        final boolean[] localIsRetweeted = {isRetweetedByMe};
+
+        updateRetweetButtonUI(retweetBtn, localIsRetweeted[0], localRtCount[0]);
+
         retweetBtn.setOnAction(e -> {
             e.consume();
-            if (isRetweetedByMe) {
-                NetworkManager.getInstance().unretweet(originalContentId);
+            if (localIsRetweeted[0]) {
+                if (NetworkManager.getInstance().unretweet(originalContentId).optBoolean("success")) {
+                    localIsRetweeted[0] = false;
+                    localRtCount[0]--;
+                    updateRetweetButtonUI(retweetBtn, localIsRetweeted[0], localRtCount[0]);
+                }
             } else {
-                NetworkManager.getInstance().retweet(originalContentId);
+                if (NetworkManager.getInstance().retweet(originalContentId).optBoolean("success")) {
+                    localIsRetweeted[0] = true;
+                    localRtCount[0]++;
+                    updateRetweetButtonUI(retweetBtn, localIsRetweeted[0], localRtCount[0]);
+                }
             }
         });
 
@@ -271,14 +295,11 @@ public class HomeController {
         else feedContainer.getChildren().add(card);
     }
 
-    private void updateRetweetButtonUI(Button btn, boolean isRetweeted)
-    {
-        if (isRetweeted)
-        {
+    private void updateRetweetButtonUI(Button btn, boolean isRetweeted, int count) {
+        btn.setText("🔄 " + count);
+        if (isRetweeted) {
             btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #00ba7c; -fx-cursor: hand; -fx-font-weight: bold;");
-        }
-        else
-        {
+        } else {
             btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand;");
         }
     }
