@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
@@ -33,6 +34,12 @@ public class HomeController {
 
     @FXML
     private Circle userAvatarCircle;
+
+    @FXML
+    private StackPane imagePreviewPane;
+
+    @FXML
+    private ImageView postPreviewImageView;
 
     private String username;
     private String selectedImagePath = "";
@@ -77,7 +84,8 @@ public class HomeController {
     }
 
     @FXML
-    private void handlePostTweet() {
+    private void handlePostTweet()
+    {
         String tweetText = tweetTextArea.getText().trim();
         String currentUser = SessionManager.getInstance().getUsername();
 
@@ -97,6 +105,7 @@ public class HomeController {
         if (response != null && response.optBoolean("success", false)) {
             tweetTextArea.clear();
             selectedImagePath = "";
+            handleRemovePreview();
             loadTweetsFromServer();
         } else {
             System.err.println("Failed to post tweet: " +
@@ -451,12 +460,15 @@ public class HomeController {
             }
         } catch (Exception ignored) {}
 
-        try {
+        try
+        {
             String fileNameOnly = new File(path).getName();
             InputStream stream = getClass().getResourceAsStream("/" + fileNameOnly);
-            if (stream != null) {
+            if (stream != null)
+            {
                 Image img = new Image(stream);
-                if (!img.isError()) {
+                if (!img.isError())
+                {
                     return img;
                 }
             }
@@ -465,21 +477,28 @@ public class HomeController {
         return loadDefaultAvatar();
     }
 
-    private Image loadDefaultAvatar() {
-        try {
+    private Image loadDefaultAvatar()
+    {
+        try
+        {
             InputStream stream = getClass().getResourceAsStream("/default-avatar.png");
-            if (stream != null) {
+            if (stream != null)
+            {
                 return new Image(stream);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             System.err.println("Default avatar resource not found!");
         }
         return null;
     }
 
     @FXML
-    private void handleLogout() {
-        try {
+    private void handleLogout()
+    {
+        try
+        {
             NetworkManager.getInstance().disconnect();
 
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
@@ -487,14 +506,18 @@ public class HomeController {
             stage.setScene(new Scene(root));
             stage.setTitle("Login");
             stage.show();
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             e.printStackTrace();
         }
     }
 
     @FXML
-    private void handleGoToProfile() {
-        try {
+    private void handleGoToProfile()
+    {
+        try
+        {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/profile.fxml"));
             Parent root = loader.load();
 
@@ -516,17 +539,34 @@ public class HomeController {
     }
 
     @FXML
-    private void handleChooseImage() {
+    private void handleChooseImage()
+    {
         FileChooser chooser = new FileChooser();
         chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg")
+                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif")
         );
 
         File file = chooser.showOpenDialog(feedContainer.getScene().getWindow());
-        if (file != null) {
+        if (file != null)
+        {
             selectedImagePath = file.getAbsolutePath();
+
+            Image img = new Image(file.toURI().toString());
+            postPreviewImageView.setImage(img);
+            imagePreviewPane.setVisible(true);
+            imagePreviewPane.setManaged(true);
+
             System.out.println("Selected image: " + selectedImagePath);
         }
+    }
+
+    @FXML
+    private void handleRemovePreview()
+    {
+        selectedImagePath = "";
+        postPreviewImageView.setImage(null);
+        imagePreviewPane.setVisible(false);
+        imagePreviewPane.setManaged(false);
     }
 
     @FXML

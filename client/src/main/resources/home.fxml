@@ -10,6 +10,8 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.image.ImageView?>
 <HBox prefHeight="700.0" prefWidth="1000.0"
       style="-fx-background-color: black;"
       stylesheets="@style.css"
@@ -17,7 +19,6 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="client.HomeController">
 
-    <!-- LEFT SIDEBAR  -->
     <VBox maxWidth="275.0" minWidth="220.0" prefWidth="250.0" spacing="10"
           style="-fx-border-color: #2f3336; -fx-border-width: 0 1 0 0;">
         <padding>
@@ -36,7 +37,6 @@
         <Button maxWidth="Infinity" onAction="#handleLogout" styleClass="logout-button" text="Logout" />
     </VBox>
 
-    <!-- CENTER FEED  -->
     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
         <content>
             <VBox alignment="TOP_CENTER">
@@ -48,11 +48,21 @@
                         <Label style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 15;" text="Home" />
                     </VBox>
 
-                    <!-- Tweet Creation Area -->
                     <VBox spacing="15" style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;">
                         <HBox spacing="15">
                             <Circle fx:id="userAvatarCircle" fill="#333" radius="22" />
-                            <TextArea fx:id="tweetTextArea" prefHeight="100" promptText="What's happening?!" styleClass="tweet-box" wrapText="true" HBox.hgrow="ALWAYS" />
+                            <VBox HBox.hgrow="ALWAYS" spacing="10">
+                                <TextArea fx:id="tweetTextArea" prefHeight="100" promptText="What's happening?!" styleClass="tweet-box" wrapText="true" />
+
+                                <StackPane fx:id="imagePreviewPane" visible="false" managed="false" alignment="TOP_LEFT">
+                                    <ImageView fx:id="postPreviewImageView" fitWidth="400" preserveRatio="true" />
+                                    <Button text="✕" onAction="#handleRemovePreview" styleClass="remove-preview-button" StackPane.alignment="TOP_RIGHT">
+                                        <StackPane.margin>
+                                            <Insets top="5" right="5"/>
+                                        </StackPane.margin>
+                                    </Button>
+                                </StackPane>
+                            </VBox>
                         </HBox>
 
                         <HBox alignment="CENTER_RIGHT" spacing="15">
