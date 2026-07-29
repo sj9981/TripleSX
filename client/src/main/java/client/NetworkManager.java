@@ -377,4 +377,20 @@ public class NetworkManager
         request.put("username", username);
         return sendRequestObject(request);
     }
+
+    public JSONObject retweet(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "retweet");
+        request.put("username", SessionManager.getInstance().getUsername());
+        request.put("tweet_id", tweetId);
+        return sendRequestObject(request);
+    }
+
+    public JSONObject unretweet(int tweetId) {
+        JSONObject request = new JSONObject();
+        request.put("action", "unretweet");
+        request.put("username", SessionManager.getInstance().getUsername());
+        request.put("tweet_id", tweetId);
+        return sendRequestObject(request);
+    }
 }

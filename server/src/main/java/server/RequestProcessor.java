@@ -74,6 +74,20 @@ public class RequestProcessor {
                 case "get_following_list":
                     response = handleGetFollowList(request, false);
                     break;
+                case "retweet":
+                    String rtUser = request.getString("username");
+                    int rtId = request.getInt("tweet_id");
+                    boolean success = DatabaseManager.retweet(rtUser, rtId);
+                    response.put("success", success);
+                    response.put("message", success ? "Retweeted" : "Failed to retweet");
+                    break;
+                case "unretweet":
+                    String unRtUser = request.getString("username");
+                    int unRtId = request.getInt("tweet_id");
+                    boolean unSuccess = DatabaseManager.unretweet(unRtUser, unRtId);
+                    response.put("success", unSuccess);
+                    response.put("message", unSuccess ? "Retweet removed" : "Failed to remove retweet");
+                    break;
                 default:
                     response.put("success", false);
                     response.put("message", "Unknown action: " + action);
