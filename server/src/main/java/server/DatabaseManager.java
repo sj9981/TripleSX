@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "Sa123456*";
+    private static final String PASSWORD = "123456";
     private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -255,17 +255,22 @@ public class DatabaseManager
 
     public static JSONObject getTweetDetails(int tweetId, String loggedInUsername) {
         JSONObject result = new JSONObject();
+        result.put("success", false);
+
         int loggedInUserId = getUserIdByUsername(loggedInUsername);
 
+        // main tweet
         String mainSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                "(SELECT COUNT(*) FROM tweets WHERE is_retweet_of = t.id) AS retweet_count, " +
+                "EXISTS (SELECT 1 FROM tweets WHERE is_retweet_of = t.id AND user_id = ?) AS user_retweeted, " +
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
                 "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
                 "WHERE t.id = ?";
-
+        // replies
         String repliesSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
@@ -277,9 +282,12 @@ public class DatabaseManager
                 "ORDER BY t.created_at ASC";
 
         try (Connection conn = getConnection()) {
+            // 1. Fetch Main Tweet
             try (PreparedStatement ps = conn.prepareStatement(mainSql)) {
                 ps.setInt(1, loggedInUserId);
-                ps.setInt(2, tweetId);
+                ps.setInt(2, loggedInUserId);
+                ps.setInt(3, tweetId);
+
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         JSONObject tweet = new JSONObject();
@@ -291,20 +299,24 @@ public class DatabaseManager
 
                         Timestamp ts = rs.getTimestamp("created_at");
                         tweet.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
+
                         tweet.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
                         tweet.put("like_count", rs.getInt("like_count"));
                         tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                        tweet.put("retweet_count", rs.getInt("retweet_count"));
+                        tweet.put("is_retweeted", rs.getBoolean("user_retweeted"));
                         tweet.put("reply_count", rs.getInt("reply_count"));
 
                         result.put("tweet", tweet);
+                        result.put("success", true);
                     } else {
-                        result.put("success", false);
                         result.put("message", "Tweet not found.");
                         return result;
                     }
                 }
             }
 
+            // Fetch Replies
             JSONArray replies = new JSONArray();
             try (PreparedStatement ps = conn.prepareStatement(repliesSql)) {
                 ps.setInt(1, loggedInUserId);
@@ -320,6 +332,7 @@ public class DatabaseManager
 
                         Timestamp ts = rs.getTimestamp("created_at");
                         reply.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
+
                         reply.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
                         reply.put("like_count", rs.getInt("like_count"));
                         reply.put("is_liked", rs.getInt("is_liked") > 0);
@@ -334,8 +347,9 @@ public class DatabaseManager
             result.put("replies", replies);
 
         } catch (SQLException e) {
+            e.printStackTrace();
             result.put("success", false);
-            result.put("message", "Error getting tweet details: " + e.getMessage());
+            result.put("message", "Database error: " + e.getMessage());
         }
 
         return result;
@@ -520,61 +534,51 @@ public class DatabaseManager
         JSONArray tweets = new JSONArray();
 
         String sql =
-                "SELECT " +
-                        "   t.id AS current_record_id, " +
-                        "   t.is_retweet_of, " +
-                        "   u.username AS person_who_tweeted, " +
-                        "   COALESCE(orig_u.username, u.username) AS author_username, " +
-                        "   COALESCE(orig_u.display_name, u.display_name) AS author_display_name, " +
-                        "   COALESCE(orig_u.avatar_path, u.avatar_path) AS author_avatar, " +
-                        "   COALESCE(orig_t.content, t.content) AS final_content, " +
-                        "   t.created_at, " +
-                        "   COALESCE(orig_tm.media_path, tm.media_path) AS final_media_path, " +
-                        "   (SELECT COUNT(*) FROM likes WHERE tweet_id = COALESCE(t.is_retweet_of, t.id)) AS like_count, " +
-                        "   (SELECT COUNT(*) FROM tweets WHERE is_retweet_of = COALESCE(t.is_retweet_of, t.id)) AS retweet_count, " +
-                        "   (SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = COALESCE(t.is_retweet_of, t.id)) AS reply_count, " +
-                        "   EXISTS (SELECT 1 FROM likes WHERE tweet_id = COALESCE(t.is_retweet_of, t.id) AND user_id = (SELECT id FROM users WHERE username = ?)) AS user_liked, " +
-                        "   EXISTS (SELECT 1 FROM tweets WHERE is_retweet_of = COALESCE(t.is_retweet_of, t.id) AND user_id = (SELECT id FROM users WHERE username = ?)) AS user_retweeted " +
+                "SELECT t.id AS current_record_id, t.is_retweet_of, " +
+                        "u.username AS person_who_tweeted, " +
+                        "COALESCE(orig_u.username, u.username) AS author_username, " +
+                        "COALESCE(orig_u.display_name, u.display_name) AS author_display_name, " +
+                        "COALESCE(orig_u.avatar_path, u.avatar_path) AS author_avatar, " + // This was missing in mapping
+                        "COALESCE(orig_t.content, t.content) AS final_content, " +
+                        "t.created_at, " +
+                        "COALESCE(orig_tm.media_path, tm.media_path) AS final_media_path, " +
+                        " (SELECT COUNT(*) FROM likes WHERE tweet_id = COALESCE(t.is_retweet_of, t.id)) AS like_count, " +
+                        " (SELECT COUNT(*) FROM tweets WHERE is_retweet_of = COALESCE(t.is_retweet_of, t.id)) AS retweet_count, " +
+                        " (SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = COALESCE(t.is_retweet_of, t.id)) AS reply_count, " +
+                        " EXISTS (SELECT 1 FROM likes WHERE tweet_id = COALESCE(t.is_retweet_of, t.id) AND user_id = (SELECT id FROM users WHERE username = ?)) AS user_liked, " +
+                        " EXISTS (SELECT 1 FROM tweets WHERE is_retweet_of = COALESCE(t.is_retweet_of, t.id) AND user_id = (SELECT id FROM users WHERE username = ?)) AS user_retweeted " +
                         "FROM tweets t " +
                         "JOIN users u ON t.user_id = u.id " +
                         "LEFT JOIN tweets orig_t ON t.is_retweet_of = orig_t.id " +
                         "LEFT JOIN users orig_u ON orig_t.user_id = orig_u.id " +
                         "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
                         "LEFT JOIN tweet_media orig_tm ON orig_tm.tweet_id = orig_t.id " +
-                        "WHERE t.parent_tweet_id IS NULL AND (" +
-                        "   t.user_id = (SELECT id FROM users WHERE username = ?) " +
-                        "   OR t.user_id IN (SELECT following_id FROM follows WHERE follower_id = (SELECT id FROM users WHERE username = ?))" +
-                        ") " +
+                        "WHERE t.parent_tweet_id IS NULL " +
+                        "AND (t.user_id = (SELECT id FROM users WHERE username = ?) OR t.user_id IN (SELECT following_id FROM follows WHERE follower_id = (SELECT id FROM users WHERE username = ?))) " +
                         "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, username);
-            ps.setString(2, username);
-            ps.setString(3, username);
-            ps.setString(4, username);
+            ps.setString(1, username); ps.setString(2, username);
+            ps.setString(3, username); ps.setString(4, username);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     JSONObject tweet = new JSONObject();
-                    int isRetweetOf = rs.getInt("is_retweet_of");
+                    int recordId = rs.getInt("current_record_id");
+                    int originalId = rs.getInt("is_retweet_of");
                     boolean isRetweet = !rs.wasNull();
 
-                    int actionTweetId = isRetweet ? isRetweetOf : rs.getInt("current_record_id");
-                    tweet.put("tweet_id", actionTweetId);
-
+                    tweet.put("tweet_id", recordId);
+                    tweet.put("original_tweet_id", isRetweet ? originalId : recordId);
                     tweet.put("is_retweet", isRetweet);
-                    if (isRetweet) {
-                        tweet.put("retweeted_by", rs.getString("person_who_tweeted"));
-                    }
+                    if (isRetweet) tweet.put("retweeted_by", rs.getString("person_who_tweeted"));
 
                     tweet.put("username", rs.getString("author_username"));
                     tweet.put("display_name", rs.getString("author_display_name"));
                     tweet.put("avatar_path", rs.getString("author_avatar") == null ? "" : rs.getString("author_avatar"));
                     tweet.put("content", rs.getString("final_content"));
                     tweet.put("image_path", rs.getString("final_media_path") == null ? "" : rs.getString("final_media_path"));
-
                     tweet.put("like_count", rs.getInt("like_count"));
                     tweet.put("retweet_count", rs.getInt("retweet_count"));
                     tweet.put("reply_count", rs.getInt("reply_count"));
@@ -821,41 +825,46 @@ public class DatabaseManager
         return list;
     }
 
-    public static boolean retweet(String username, int originalTweetId) {
+    public static int retweet(String username, int originalTweetId) {
         int userId = getUserIdByUsername(username);
-        if (userId == -1) return false;
+        if (userId == -1) return -1;
 
-        String checkSql = "SELECT 1 FROM tweets WHERE user_id = ? AND is_retweet_of = ?";
-        String insertSql = "INSERT INTO tweets (user_id, is_retweet_of, content) VALUES (?, ?, '')";
+        String insertSql = "INSERT INTO tweets (user_id, is_retweet_of, content) VALUES (?, ?, '') RETURNING id";
 
-        try (Connection conn = getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(checkSql)) {
-                ps.setInt(1, userId);
-                ps.setInt(2, originalTweetId);
-                if (ps.executeQuery().next()) return false;
-            }
-            try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
-                ps.setInt(1, userId);
-                ps.setInt(2, originalTweetId);
-                return ps.executeUpdate() > 0;
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(insertSql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, originalTweetId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
         }
+        return -1;
     }
 
-    public static boolean unretweet(String username, int originalTweetId) {
-        String sql = "DELETE FROM tweets WHERE user_id = (SELECT id FROM users WHERE username = ?) " +
-                "AND is_retweet_of = ?";
+    public static int unretweet(String username, int originalTweetId) {
+        String sql = "DELETE FROM tweets WHERE id = (" +
+                "  SELECT id FROM tweets " +
+                "  WHERE user_id = (SELECT id FROM users WHERE username = ?) " +
+                "  AND is_retweet_of = ? " +
+                "  LIMIT 1" +
+                ") RETURNING id";
+
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
             pstmt.setInt(2, originalTweetId);
-            return pstmt.executeUpdate() > 0;
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id");
+                }
+            }
         } catch (SQLException e) {
             System.err.println("Error removing retweet: " + e.getMessage());
-            return false;
         }
+        return -1;
     }
 }

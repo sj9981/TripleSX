@@ -285,8 +285,22 @@ public class NetworkManager
                                     System.err.println("[CLIENT] HomeController instance is null.");
                                 }
                             });
-                        } else {
-                            System.out.println("[CLIENT] Unknown push type: " + type);
+                        }
+                        else if ("DELETE_TWEET".equals(type)) {
+                            int tweetId = message.optInt("tweet_id", -1);
+                            if (tweetId == -1) {
+                                tweetId = message.optInt("original_tweet_id", -1);
+                            }
+
+                            if (tweetId != -1) {
+                                final int finalId = tweetId;
+                                Platform.runLater(() -> {
+                                    HomeController controller = HomeController.getInstance();
+                                    if (controller != null) {
+                                        controller.removeTweetFromFeed(finalId);
+                                    }
+                                });
+                            }
                         }
 
                         continue;

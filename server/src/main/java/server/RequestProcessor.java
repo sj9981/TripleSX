@@ -76,17 +76,57 @@ public class RequestProcessor {
                     break;
                 case "retweet":
                     String rtUser = request.getString("username");
-                    int rtId = request.getInt("tweet_id");
-                    boolean success = DatabaseManager.retweet(rtUser, rtId);
-                    response.put("success", success);
-                    response.put("message", success ? "Retweeted" : "Failed to retweet");
+                    int originalId = request.getInt("tweet_id");
+
+                    int newRetweetRecordId = DatabaseManager.retweet(rtUser, originalId);
+                    boolean rtSuccess = (newRetweetRecordId != -1);
+                    response.put("success", rtSuccess);
+
+                    if (rtSuccess) {
+                        // Fetch details of the original content to broadcast the retweet UI
+                        JSONObject details = DatabaseManager.getTweetDetails(originalId, rtUser);
+                        if (details.optBoolean("success")) {
+                            JSONObject originalData = details.getJSONObject("tweet");
+                            DatabaseManager.UserProfile rtUserProfile = DatabaseManager.getUserProfile(rtUser);
+
+                            // Create the Push Notification
+                            JSONObject push = new JSONObject(originalData.toString());
+                            push.put("type", "NEW_TWEET");
+                            push.put("tweet_id", newRetweetRecordId); // The ID of the NEW retweet record
+                            push.put("original_tweet_id", originalId);
+                            push.put("is_retweet", true);
+                            push.put("retweeted_by", rtUserProfile.getDisplayName());
+
+                            // Send to the person who just retweeted
+                            ConnectionManager.sendToClient(rtUser, push.toString());
+
+                            // Send to all their followers
+                            List<String> followers = DatabaseManager.getFollowers(rtUser);
+                            for (String f : followers) {
+                                ConnectionManager.sendToClient(f, push.toString());
+                            }
+                        }
+                    }
                     break;
+
                 case "unretweet":
-                    String unRtUser = request.getString("username");
-                    int unRtId = request.getInt("tweet_id");
-                    boolean unSuccess = DatabaseManager.unretweet(unRtUser, unRtId);
-                    response.put("success", unSuccess);
-                    response.put("message", unSuccess ? "Retweet removed" : "Failed to remove retweet");
+                    String unUser = request.getString("username");
+                    int origId = request.getInt("tweet_id");
+                    int deletedId = DatabaseManager.unretweet(unUser, origId);
+                    boolean deleted = (deletedId != -1);
+                    response.put("success", deleted);
+
+                    if (deleted) {
+                        JSONObject deletePush = new JSONObject();
+                        deletePush.put("type", "DELETE_TWEET");
+                        deletePush.put("tweet_id", deletedId);
+
+                        ConnectionManager.sendToClient(unUser, deletePush.toString());
+                        List<String> followers = DatabaseManager.getFollowers(unUser);
+                        for (String f : followers) {
+                            ConnectionManager.sendToClient(f, deletePush.toString());
+                        }
+                    }
                     break;
                 default:
                     response.put("success", false);

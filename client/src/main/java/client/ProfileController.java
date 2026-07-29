@@ -274,6 +274,8 @@ public class ProfileController
         String imagePath = tweetJson.optString("imagePath", "");
         int likeCount = tweetJson.optInt("like_count", 0);
         boolean isLiked = tweetJson.optBoolean("is_liked", false);
+        int rtCount = tweetJson.optInt("retweet_count", 0);
+        boolean isRetweeted = tweetJson.optBoolean("is_retweeted", false);
 
         VBox tweetBox = new VBox(10);
         tweetBox.getStyleClass().add("tweet-card");
@@ -312,26 +314,53 @@ public class ProfileController
             } catch (Exception ignored) {}
         }
 
+        // Like Logic
         Button likeBtn = new Button();
-        setupLikeButtonStyle(likeBtn, isLiked, likeCount);
+        final int[] pLikes = {likeCount};
+        final boolean[] pIsLiked = {isLiked};
+        setupLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
 
         likeBtn.setOnAction(e -> {
-            if (likeBtn.getText().contains("❤")) {
-                JSONObject res = NetworkManager.getInstance().unlikeTweet(tweetId);
-                if (res.optBoolean("success")) {
-                    int currentNum = Integer.parseInt(likeBtn.getText().replaceAll("[^0-9]", ""));
-                    setupLikeButtonStyle(likeBtn, false, currentNum - 1);
+            if (pIsLiked[0]) {
+                if (NetworkManager.getInstance().unlikeTweet(tweetId).optBoolean("success")) {
+                    pIsLiked[0] = false;
+                    pLikes[0]--;
+                    setupLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
                 }
             } else {
-                JSONObject res = NetworkManager.getInstance().likeTweet(tweetId);
-                if (res.optBoolean("success")) {
-                    int currentNum = Integer.parseInt(likeBtn.getText().replaceAll("[^0-9]", ""));
-                    setupLikeButtonStyle(likeBtn, true, currentNum + 1);
+                if (NetworkManager.getInstance().likeTweet(tweetId).optBoolean("success")) {
+                    pIsLiked[0] = true;
+                    pLikes[0]++;
+                    setupLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
                 }
             }
         });
 
         tweetBox.getChildren().add(likeBtn);
+
+        Button rtBtn = new Button();
+        final int[] pRts = {rtCount};
+        final boolean[] pIsRted = {isRetweeted};
+        updateRtButtonStyle(rtBtn, pIsRted[0], pRts[0]);
+
+        rtBtn.setOnAction(e -> {
+            if (pIsRted[0]) {
+                if (NetworkManager.getInstance().unretweet(tweetId).optBoolean("success")) {
+                    pIsRted[0] = false;
+                    pRts[0]--;
+                    updateRtButtonStyle(rtBtn, pIsRted[0], pRts[0]);
+                }
+            } else {
+                if (NetworkManager.getInstance().retweet(tweetId).optBoolean("success")) {
+                    pIsRted[0] = true;
+                    pRts[0]++;
+                    updateRtButtonStyle(rtBtn, pIsRted[0], pRts[0]);
+                }
+            }
+        });
+
+        HBox actions = new HBox(15, likeBtn, rtBtn);
+        tweetBox.getChildren().add(actions);
 
         tweetBox.setOnMouseClicked(event -> {
             if (event.getTarget() instanceof Button) return;
@@ -438,6 +467,28 @@ public class ProfileController
             stage.getScene().setRoot(root);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void updateRtButtonStyle(Button btn, boolean isRetweeted, int count) {
+
+        btn.setText("🔄 " + count);
+        if (isRetweeted) {
+            btn.setStyle(
+                    "-fx-background-color: transparent; " +
+                            "-fx-text-fill: #00ba7c; " +
+                            "-fx-cursor: hand; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-font-size: 14px;"
+            );
+        } else {
+            btn.setStyle(
+                    "-fx-background-color: transparent; " +
+                            "-fx-text-fill: #71767b; " +
+                            "-fx-cursor: hand; " +
+                            "-fx-font-weight: normal; " +
+                            "-fx-font-size: 14px;"
+            );
         }
     }
 }

@@ -64,6 +64,8 @@ public class TweetDetailsController {
         String avatarPath = tweetObj.optString("avatar_path", "");
         int likeCount = tweetObj.optInt("like_count", 0);
         boolean isLiked = tweetObj.optBoolean("is_liked", false);
+        int rtCount = tweetObj.optInt("retweet_count", 0);
+        boolean isRetweeted = tweetObj.optBoolean("is_retweeted", false);
 
         VBox card = new VBox(12);
 
@@ -112,21 +114,56 @@ public class TweetDetailsController {
         card.getChildren().add(timeLabel);
 
         Button likeBtn = new Button();
-        updateLikeBtn(likeBtn, isLiked, likeCount);
+        final int[] lCount = {likeCount};
+        final boolean[] lLiked = {isLiked};
+        updateLikeBtn(likeBtn, lLiked[0], lCount[0]);
+
         likeBtn.setOnAction(e -> {
-            if (likeBtn.getText().contains("♡")) {
-                if (NetworkManager.getInstance().likeTweet(currentTweetId).optBoolean("success")) {
-                    updateLikeBtn(likeBtn, true, likeCount + 1);
+            if (lLiked[0]) {
+                if (NetworkManager.getInstance().unlikeTweet(currentTweetId).optBoolean("success")) {
+                    lLiked[0] = false;
+                    lCount[0]--;
+                    updateLikeBtn(likeBtn, lLiked[0], lCount[0]);
                 }
             } else {
-                if (NetworkManager.getInstance().unlikeTweet(currentTweetId).optBoolean("success")) {
-                    updateLikeBtn(likeBtn, false, likeCount);
+                if (NetworkManager.getInstance().likeTweet(currentTweetId).optBoolean("success")) {
+                    lLiked[0] = true;
+                    lCount[0]++;
+                    updateLikeBtn(likeBtn, lLiked[0], lCount[0]);
+                }
+            }
+        });
+        //retweet button logic
+        Button rtBtn = new Button();
+        final int[] rCount = {rtCount};
+        final boolean[] rRetweeted = {isRetweeted};
+        updateRtBtnUI(rtBtn, rRetweeted[0], rCount[0]);
+
+        rtBtn.setOnAction(e -> {
+            if (rRetweeted[0]) {
+                if (NetworkManager.getInstance().unretweet(currentTweetId).optBoolean("success")) {
+                    rRetweeted[0] = false;
+                    rCount[0]--;
+                    updateRtBtnUI(rtBtn, rRetweeted[0], rCount[0]);
+                }
+            } else {
+                if (NetworkManager.getInstance().retweet(currentTweetId).optBoolean("success")) {
+                    rRetweeted[0] = true;
+                    rCount[0]++;
+                    updateRtBtnUI(rtBtn, rRetweeted[0], rCount[0]);
                 }
             }
         });
 
-        card.getChildren().add(likeBtn);
+        HBox actions = new HBox(20, likeBtn, rtBtn);
+        card.getChildren().add(actions);
         mainTweetContainer.getChildren().add(card);
+    }
+
+    private void updateRtBtnUI(Button btn, boolean isRetweeted, int count) {
+        btn.setText("🔄 " + count);
+        btn.setStyle("-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: " +
+                (isRetweeted ? "#00ba7c" : "#71767b") + ";");
     }
 
     private void renderReplyCard(JSONObject tweetObj) {
