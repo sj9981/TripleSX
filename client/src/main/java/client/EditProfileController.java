@@ -45,6 +45,14 @@ public class EditProfileController {
     private boolean removeAvatar = false;
     private Image defaultAvatarImage;
 
+    @FXML private ImageView bannerPreviewImageView;
+    private String currentBannerPath;
+    private String selectedBannerPath;
+    private boolean removeBanner = false;
+
+    @FXML
+    private Button removeBannerButton;
+
     @FXML
     public void initialize() {
         Circle clip = new Circle(55, 55, 55);
@@ -131,17 +139,28 @@ public class EditProfileController {
         String newUsername = usernameField.getText().trim();
         String newBio = bioField.getText().trim();
 
+
         if (newName.isEmpty() || newUsername.isEmpty()) {
             showAlert("Error", "Name and Username cannot be empty.");
             return;
         }
 
-        String avatarPathToSave = currentAvatarPath;
-
+        String avatarPathToSave;
         if (removeAvatar) {
             avatarPathToSave = null;
         } else if (selectedImagePath != null && !selectedImagePath.trim().isEmpty()) {
             avatarPathToSave = selectedImagePath;
+        } else {
+            avatarPathToSave = currentAvatarPath;
+        }
+
+        String bannerPathToSave;
+        if (removeBanner) {
+            bannerPathToSave = null;
+        } else if (selectedBannerPath != null && !selectedBannerPath.trim().isEmpty()) {
+            bannerPathToSave = selectedBannerPath;
+        } else {
+            bannerPathToSave = currentBannerPath;
         }
 
         try {
@@ -150,14 +169,18 @@ public class EditProfileController {
                     newName,
                     newUsername,
                     newBio,
-                    avatarPathToSave
+                    avatarPathToSave,
+                    bannerPathToSave
             );
 
             if (success) {
                 currentUsername = newUsername;
                 currentAvatarPath = avatarPathToSave;
+                currentBannerPath = bannerPathToSave;
                 selectedImagePath = null;
+                selectedBannerPath = null;
                 removeAvatar = false;
+                removeBanner = false;
 
                 showAlert("Success", "Profile updated successfully.");
                 goToProfile(event, currentUsername);
@@ -201,47 +224,58 @@ public class EditProfileController {
                                               String newName,
                                               String newUsername,
                                               String newBio,
-                                              String avatarPath) {
+                                              String avatarPath,
+                                              String bannerPath) {
         JSONObject response = NetworkManager.getInstance().updateProfile(
-                oldUsername, newName, newUsername, newBio, avatarPath
+                oldUsername, newName, newUsername, newBio, avatarPath, bannerPath
         );
         return response != null && response.optBoolean("success", false);
     }
 
     private void loadAvatarFromDatabase() {
-        if (currentUsername == null || currentUsername.trim().isEmpty()) {
-            return;
-        }
-
+        if (currentUsername == null || currentUsername.trim().isEmpty()) return;
         try {
             JSONObject response = NetworkManager.getInstance().getUserProfile(currentUsername);
-            if (response != null && response.optBoolean("success", false)) {
+            if (response != null && response.optBoolean("success")) {
                 JSONObject userObj = response.optJSONObject("user");
-                if (userObj != null) {
-                    currentAvatarPath = userObj.optString("avatarPath", null);
+                currentAvatarPath = userObj.optString("avatarPath", null);
 
-                    if (currentAvatarPath != null && !currentAvatarPath.trim().isEmpty()) {
-                        File file = new File(currentAvatarPath);
-                        if (file.exists()) {
-                            profileImageView.setImage(new Image(file.toURI().toString()));
-                            if (removePhotoButton != null) {
-                                removePhotoButton.setDisable(false);
-                            }
-                        } else {
-                            showDefaultAvatar();
-                        }
-                    } else {
-                        showDefaultAvatar();
-                    }
+                Image avatarImg = resolveImage(currentAvatarPath);
+                if (avatarImg != null) {
+                    profileImageView.setImage(avatarImg);
+                    if (removePhotoButton != null) removePhotoButton.setDisable(false);
                 } else {
-                    showDefaultAvatar();
+                    profileImageView.setImage(new Image(getClass().getResourceAsStream("/default-avatar.png")));
+                    if (removePhotoButton != null) removePhotoButton.setDisable(true);
                 }
-            } else {
-                showDefaultAvatar();
             }
         } catch (Exception e) {
             e.printStackTrace();
-            showDefaultAvatar();
+        }
+    }
+
+    private void loadBannerFromDatabase() {
+        try {
+            JSONObject response = NetworkManager.getInstance().getUserProfile(currentUsername);
+            if (response != null && response.optBoolean("success")) {
+                JSONObject userObj = response.optJSONObject("user");
+                currentBannerPath = userObj.optString("bannerPath", null);
+
+                Image bannerImg = resolveImage(currentBannerPath);
+                if (bannerImg != null) {
+                    bannerPreviewImageView.setImage(bannerImg);
+                    if (removeBannerButton != null) removeBannerButton.setDisable(false);
+                } else {
+                    try {
+                        bannerPreviewImageView.setImage(new Image(getClass().getResourceAsStream("/default-banner.png")));
+                    } catch (Exception e) {
+                        bannerPreviewImageView.setImage(null);
+                    }
+                    if (removeBannerButton != null) removeBannerButton.setDisable(true);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -269,5 +303,57 @@ public class EditProfileController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    @FXML
+    private void handleChooseBanner(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Banner Photo");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif")
+        );
+
+        File selectedFile = fileChooser.showOpenDialog(nameField.getScene().getWindow());
+
+        if (selectedFile != null) {
+            selectedBannerPath = selectedFile.getAbsolutePath();
+            removeBanner = false;
+            bannerPreviewImageView.setImage(new Image(selectedFile.toURI().toString()));
+        }
+    }
+
+    @FXML
+    private void handleRemoveBanner(ActionEvent event) {
+        selectedBannerPath = null;
+        removeBanner = true;
+
+        bannerPreviewImageView.setImage(null);
+
+        if (removeBannerButton != null) {
+            removeBannerButton.setDisable(true);
+        }
+    }
+
+    private Image resolveImage(String path) {
+        if (path == null || path.trim().isEmpty() || path.equalsIgnoreCase("null")) return null;
+
+        try {
+            File file = new File(path);
+            if (file.exists()) {
+                Image img = new Image(file.toURI().toString(), false);
+                if (!img.isError()) return img;
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            String resourcePath = path.startsWith("/") ? path : "/" + path;
+            java.io.InputStream stream = getClass().getResourceAsStream(resourcePath);
+            if (stream != null) {
+                Image img = new Image(stream);
+                if (!img.isError()) return img;
+            }
+        } catch (Exception ignored) {}
+
+        return null;
     }
 }

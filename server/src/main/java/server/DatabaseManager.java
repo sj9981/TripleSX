@@ -620,9 +620,9 @@ public class DatabaseManager
         return followers;
     }
 
-    public static boolean updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath)
+    public static boolean updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath, String bannerPath)
     {
-        String sql = "UPDATE users SET display_name = ?, username = ?, bio = ?, avatar_path = ? WHERE username = ?";
+        String sql = "UPDATE users SET display_name = ?, username = ?, bio = ?, avatar_path = ?, banner_path = ? WHERE username = ?";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql))
         {
@@ -630,16 +630,19 @@ public class DatabaseManager
             ps.setString(2, newUsername);
             ps.setString(3, newBio);
 
-            if (avatarPath == null || avatarPath.trim().isEmpty())
-            {
+            if (avatarPath == null || avatarPath.trim().isEmpty()) {
                 ps.setNull(4, java.sql.Types.VARCHAR);
-            }
-            else
-            {
+            } else {
                 ps.setString(4, avatarPath);
             }
 
-            ps.setString(5, oldUsername);
+            if (bannerPath == null || bannerPath.trim().isEmpty()) {
+                ps.setNull(5, java.sql.Types.VARCHAR);
+            } else {
+                ps.setString(5, bannerPath);
+            }
+
+            ps.setString(6, oldUsername);
 
             return ps.executeUpdate() > 0;
         }

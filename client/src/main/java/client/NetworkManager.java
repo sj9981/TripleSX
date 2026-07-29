@@ -157,7 +157,7 @@ public class NetworkManager
         return sendRequestObject(request);
     }
 
-    public JSONObject updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath) {
+    public JSONObject updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath, String bannerPath) {
         JSONObject request = new JSONObject();
         request.put("action", "update_profile");
         request.put("old_username", oldUsername);
@@ -165,6 +165,7 @@ public class NetworkManager
         request.put("new_username", newUsername);
         request.put("bio", newBio);
         request.put("avatar_path", avatarPath == null ? "" : avatarPath);
+        request.put("banner_path", bannerPath == null ? "" : bannerPath);
         return sendRequestObject(request);
     }
 
