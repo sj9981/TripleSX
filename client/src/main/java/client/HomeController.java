@@ -38,10 +38,7 @@ public class HomeController {
     private Circle userAvatarCircle;
 
     @FXML
-    private StackPane imagePreviewPane;
-
-    @FXML
-    private ImageView postPreviewImageView;
+    private HBox imagePreviewContainer;
 
     @FXML
     private Label charCountLabel;
@@ -50,7 +47,7 @@ public class HomeController {
     private Button postButton;
 
     private String username;
-    private String selectedImagePath = "";
+    private final java.util.List<String> selectedImagePaths = new java.util.ArrayList<>();
 
     private final Map<String, Image> avatarCache = new HashMap<>();
 
@@ -126,7 +123,7 @@ public class HomeController {
             return;
         }
 
-        if (tweetText.isEmpty() && selectedImagePath.isEmpty()) {
+        if (tweetText.isEmpty() && selectedImagePaths.isEmpty()) {
             System.out.println("Nothing to post.");
             return;
         }
@@ -137,12 +134,12 @@ public class HomeController {
         }
 
         JSONObject response = NetworkManager.getInstance()
-                .createTweet(currentUser, tweetText, selectedImagePath);
+                .createTweet(currentUser, tweetText, selectedImagePaths, -1);
 
         if (response != null && response.optBoolean("success", false)) {
             tweetTextArea.clear();
-            selectedImagePath = "";
-            handleRemovePreview();
+            selectedImagePaths.clear();
+            updateImagePreviews();
             loadTweetsFromServer();
         } else {
             System.err.println("Failed to post tweet: " +
@@ -252,18 +249,30 @@ public class HomeController {
         javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 15, "#e7e9ea");
         card.getChildren().addAll(header, contentFlow);
 
-        if (!imagePath.isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
-            try {
-                File imgFile = new File(imagePath);
-                if (imgFile.exists()) {
-                    ImageView iv = new ImageView(new Image(imgFile.toURI().toString()));
-                    iv.setFitWidth(400);
-                    iv.setPreserveRatio(true);
-                    card.getChildren().add(iv);
+        JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty() && !"null".equalsIgnoreCase(path)) {
+                    try {
+                        File imgFile = new File(path);
+                        if (imgFile.exists()) {
+                            ImageView iv = new ImageView(new Image(imgFile.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                iv.setFitWidth(400);
+                            } else {
+                                iv.setFitWidth(200); // Scale down when displaying side-by-side
+                            }
+                            iv.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(iv);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {}
+            }
+            card.getChildren().add(imagesLayout);
         }
-
         Button likeBtn = new Button();
         final int[] localLikeCount = {likeCount};
         final boolean[] localIsLiked = {isLikedByMe};
@@ -573,29 +582,73 @@ public class HomeController {
                 new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif")
         );
 
-        File file = chooser.showOpenDialog(feedContainer.getScene().getWindow());
-        if (file != null)
+        java.util.List<File> files = chooser.showOpenMultipleDialog(feedContainer.getScene().getWindow());
+        if (files != null && !files.isEmpty())
         {
-            selectedImagePath = file.getAbsolutePath();
+            for (File file : files) {
+                String absolutePath = file.getAbsolutePath();
+                if (!selectedImagePaths.contains(absolutePath)) {
+                    selectedImagePaths.add(absolutePath);
+                }
+            }
+            updateImagePreviews();
+        }
+    }
 
-            Image img = new Image(file.toURI().toString());
-            postPreviewImageView.setImage(img);
-            imagePreviewPane.setVisible(true);
-            imagePreviewPane.setManaged(true);
+    private void updateImagePreviews() {
+        imagePreviewContainer.getChildren().clear();
+        if (selectedImagePaths.isEmpty()) {
+            imagePreviewContainer.setVisible(false);
+            imagePreviewContainer.setManaged(false);
+            return;
+        }
 
-            System.out.println("Selected image: " + selectedImagePath);
+        imagePreviewContainer.setVisible(true);
+        imagePreviewContainer.setManaged(true);
+
+        for (String path : selectedImagePaths) {
+            try {
+                File file = new File(path);
+                if (file.exists()) {
+                    StackPane itemPane = new StackPane();
+                    itemPane.setPrefSize(100, 100);
+                    itemPane.setMaxSize(100, 100);
+
+                    ImageView iv = new ImageView(new Image(file.toURI().toString()));
+                    iv.setFitWidth(100);
+                    iv.setFitHeight(100);
+                    iv.setPreserveRatio(false);
+
+                    javafx.scene.shape.Rectangle clipRect = new javafx.scene.shape.Rectangle(100, 100);
+                    clipRect.setArcWidth(16);
+                    clipRect.setArcHeight(16);
+                    iv.setClip(clipRect);
+
+                    Button removeBtn = new Button("✕");
+                    removeBtn.setStyle("-fx-background-color: rgba(0,0,0,0.7); -fx-text-fill: white; -fx-background-radius: 12; -fx-font-size: 10px; -fx-padding: 2 5; -fx-cursor: hand;");
+                    removeBtn.setOnAction(e -> {
+                        selectedImagePaths.remove(path);
+                        updateImagePreviews();
+                    });
+
+                    StackPane.setAlignment(removeBtn, javafx.geometry.Pos.TOP_RIGHT);
+                    StackPane.setMargin(removeBtn, new javafx.geometry.Insets(4));
+
+                    itemPane.getChildren().addAll(iv, removeBtn);
+                    imagePreviewContainer.getChildren().add(itemPane);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @FXML
     private void handleRemovePreview()
     {
-        selectedImagePath = "";
-        postPreviewImageView.setImage(null);
-        imagePreviewPane.setVisible(false);
-        imagePreviewPane.setManaged(false);
+        selectedImagePaths.clear();
+        updateImagePreviews();
     }
-
     @FXML
     private void handleGoToSearch()
     {

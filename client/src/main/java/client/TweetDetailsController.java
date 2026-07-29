@@ -90,7 +90,6 @@ public class TweetDetailsController {
         String displayName = tweetObj.optString("display_name", author);
         String content = tweetObj.optString("content", "");
         String createdAt = tweetObj.optString("created_at", "");
-        String imagePath = tweetObj.optString("image_path", "");
         String avatarPath = tweetObj.optString("avatar_path", "");
         int likeCount = tweetObj.optInt("like_count", 0);
         boolean isLiked = tweetObj.optBoolean("is_liked", false);
@@ -124,16 +123,29 @@ public class TweetDetailsController {
         javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 18, "#e7e9ea");
         card.getChildren().addAll(header, contentFlow);
 
-        if (!imagePath.trim().isEmpty()) {
-            try {
-                File file = new File(imagePath);
-                if (file.exists()) {
-                    ImageView imgView = new ImageView(new Image(file.toURI().toString()));
-                    imgView.setFitWidth(450);
-                    imgView.setPreserveRatio(true);
-                    card.getChildren().add(imgView);
+        JSONArray imagePaths = tweetObj.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty()) {
+                    try {
+                        File file = new File(path);
+                        if (file.exists()) {
+                            ImageView imgView = new ImageView(new Image(file.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                imgView.setFitWidth(450);
+                            } else {
+                                imgView.setFitWidth(220);
+                            }
+                            imgView.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(imgView);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {}
+            }
+            card.getChildren().add(imagesLayout);
         }
 
         Label timeLabel = new Label(createdAt);
@@ -223,7 +235,7 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-       javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 14, "#e7e9ea");
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 14, "#e7e9ea");
 
         Label timeLabel = new Label(createdAt);
         timeLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
@@ -262,7 +274,8 @@ public class TweetDetailsController {
         }
 
         String currentUser = SessionManager.getInstance().getUsername();
-        JSONObject response = NetworkManager.getInstance().createTweet(currentUser, replyText, "", currentTweetId);
+
+        JSONObject response = NetworkManager.getInstance().createTweet(currentUser, replyText, new java.util.ArrayList<>(), currentTweetId);
 
         if (response != null && response.optBoolean("success", false)) {
             replyTextArea.clear();
@@ -337,6 +350,7 @@ public class TweetDetailsController {
             stage.setScene(new Scene(root));
         } catch (IOException e) { e.printStackTrace(); }
     }
+
     @FXML
     private void handleTrendClick(javafx.event.ActionEvent event) {
         if (event.getSource() instanceof Hyperlink) {
