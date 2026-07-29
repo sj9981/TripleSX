@@ -9,9 +9,9 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
-
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.image.ImageView?>
+
 <HBox prefHeight="700.0" prefWidth="1000.0"
       style="-fx-background-color: black;"
       stylesheets="@style.css"
@@ -40,10 +40,8 @@
     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
         <content>
             <VBox alignment="TOP_CENTER">
-                <!-- Limit content width for readability on large screens -->
                 <VBox maxWidth="600.0" spacing="0">
 
-                    <!-- Header -->
                     <VBox style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0;">
                         <Label style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 15;" text="Home" />
                     </VBox>
@@ -66,19 +64,18 @@
                         </HBox>
 
                         <HBox alignment="CENTER_RIGHT" spacing="15">
+                            <Label fx:id="charCountLabel" text="280" style="-fx-text-fill: #71767b; -fx-font-size: 14px;" />
                             <Button onAction="#handleChooseImage" styleClass="image-button" text="📸" />
-                            <Button onAction="#handlePostTweet" styleClass="post-button" text="Post" />
+                            <Button fx:id="postButton" onAction="#handlePostTweet" styleClass="post-button" text="Post" />
                         </HBox>
                     </VBox>
 
-                    <!-- Feed Container -->
                     <VBox fx:id="feedContainer" />
                 </VBox>
             </VBox>
         </content>
     </ScrollPane>
 
-    <!-- RIGHT SIDEBAR (Fixed Width - hidden on small screens if desired) -->
     <VBox maxWidth="350.0" minWidth="280.0" prefWidth="320.0" spacing="20"
           style="-fx-border-color: #2f3336; -fx-border-width: 0 0 0 1;">
         <padding>

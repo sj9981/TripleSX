@@ -27,8 +27,37 @@ public class TweetDetailsController {
     @FXML private VBox mainTweetContainer;
     @FXML private TextArea replyTextArea;
     @FXML private VBox repliesContainer;
+    @FXML private Label replyCharCountLabel;
+    @FXML private Button replyButton;
 
     private int currentTweetId;
+
+    @FXML
+    public void initialize() {
+        if (replyTextArea != null && replyCharCountLabel != null && replyButton != null) {
+            replyTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue == null) {
+                    replyCharCountLabel.setText("280");
+                    replyButton.setDisable(false);
+                    return;
+                }
+                int length = newValue.length();
+                int remaining = 280 - length;
+                replyCharCountLabel.setText(String.valueOf(remaining));
+
+                if (remaining < 0) {
+                    replyCharCountLabel.setStyle("-fx-text-fill: #f4212e; -fx-font-weight: bold;");
+                    replyButton.setDisable(true);
+                } else if (remaining <= 20) {
+                    replyCharCountLabel.setStyle("-fx-text-fill: #ffd400; -fx-font-weight: bold;");
+                    replyButton.setDisable(false);
+                } else {
+                    replyCharCountLabel.setStyle("-fx-text-fill: #71767b; -fx-font-weight: normal;");
+                    replyButton.setDisable(false);
+                }
+            });
+        }
+    }
 
     public void setTweetId(int tweetId) {
         this.currentTweetId = tweetId;
@@ -133,7 +162,7 @@ public class TweetDetailsController {
                 }
             }
         });
-        //retweet button logic
+
         Button rtBtn = new Button();
         final int[] rCount = {rtCount};
         final boolean[] rRetweeted = {isRetweeted};
@@ -230,6 +259,11 @@ public class TweetDetailsController {
     private void handlePostReply() {
         String replyText = replyTextArea.getText().trim();
         if (replyText.isEmpty()) return;
+
+        if (replyText.length() > 280) {
+            System.err.println("Reply exceeds 280 characters.");
+            return;
+        }
 
         String currentUser = SessionManager.getInstance().getUsername();
         JSONObject response = NetworkManager.getInstance().createTweet(currentUser, replyText, "", currentTweetId);

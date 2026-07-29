@@ -7,6 +7,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -32,8 +34,10 @@ public class ProfileController
     @FXML private Label followingCountLabel;
     @FXML private VBox userTweetsContainer;
     @FXML private ImageView bannerImageView;
+    @FXML private Button followButton;
 
     private String currentUsername;
+    private boolean isFollowingCurrent;
 
     @FXML
     public void initialize()
@@ -51,8 +55,6 @@ public class ProfileController
         Circle clip = new Circle(50, 50, 50);
         avatarImageView.setClip(clip);
     }
-    @FXML private Button followButton;
-    private boolean isFollowingCurrent;
 
     public void initUserData(String username)
     {
@@ -96,13 +98,9 @@ public class ProfileController
             loadAvatarImage(user.optString("avatarPath", ""));
 
             String bPath = user.optString("bannerPath", "");
-            if (bPath != null && !bPath.trim().isEmpty() && !bPath.equals("null")) {
-                Image bannerImg = resolveImage(bPath);
-                if (bannerImg != null) {
-                    bannerImageView.setImage(bannerImg);
-                } else {
-                    showDefaultBanner();
-                }
+            Image bannerImg = resolveImage(bPath, "/default-banner.png");
+            if (bannerImg != null) {
+                bannerImageView.setImage(bannerImg);
             } else {
                 showDefaultBanner();
             }
@@ -163,8 +161,7 @@ public class ProfileController
     {
         try
         {
-            Image image = resolveImage(path);
-
+            Image image = resolveImage(path, "/default-avatar.png");
             if (image != null && !image.isError())
             {
                 avatarImageView.setImage(image);
@@ -173,7 +170,6 @@ public class ProfileController
             {
                 setDefaultAvatar();
             }
-
         }
         catch (Exception e)
         {
@@ -182,11 +178,11 @@ public class ProfileController
         }
     }
 
-    private Image resolveImage(String path)
+    private Image resolveImage(String path, String defaultResource)
     {
-        if (path == null || path.trim().isEmpty())
+        if (path == null || path.trim().isEmpty() || "null".equalsIgnoreCase(path))
         {
-            return loadDefaultAvatarImage();
+            return loadResourceImage(defaultResource);
         }
 
         try
@@ -241,43 +237,28 @@ public class ProfileController
         {
         }
 
-        return loadDefaultAvatarImage();
+        return loadResourceImage(defaultResource);
     }
 
-    private Image loadDefaultAvatarImage()
+    private Image loadResourceImage(String resourcePath)
     {
-        String[] candidates = {
-                "/default-avatar.png",
-                "/test-avatar.png"
-        };
-
-        for (String path : candidates)
+        try
         {
-            try
+            InputStream stream = getClass().getResourceAsStream(resourcePath);
+            if (stream != null)
             {
-                java.net.URL url = getClass().getResource(path);
-                if (url == null)
-                {
-                    continue;
-                }
-
-                Image image = new Image(url.toExternalForm(), false);
-                if (!image.isError())
-                {
-                    return image;
-                }
-            }
-            catch (Exception ignored)
-            {
+                return new Image(stream);
             }
         }
-
+        catch (Exception ignored)
+        {
+        }
         return null;
     }
 
     private void setDefaultAvatar()
     {
-        Image defaultImage = loadDefaultAvatarImage();
+        Image defaultImage = loadResourceImage("/default-avatar.png");
         if (defaultImage != null)
         {
             avatarImageView.setImage(defaultImage);
@@ -330,7 +311,6 @@ public class ProfileController
             } catch (Exception ignored) {}
         }
 
-        // Like Logic
         Button likeBtn = new Button();
         final int[] pLikes = {likeCount};
         final boolean[] pIsLiked = {isLiked};
@@ -429,7 +409,6 @@ public class ProfileController
             stage.setScene(new Scene(root, width, height));
             stage.setTitle("X Clone - Home");
             stage.show();
-
         }
         catch (IOException e)
         {
@@ -487,7 +466,6 @@ public class ProfileController
     }
 
     private void updateRtButtonStyle(Button btn, boolean isRetweeted, int count) {
-
         btn.setText("🔄 " + count);
         if (isRetweeted) {
             btn.setStyle(

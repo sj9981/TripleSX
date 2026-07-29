@@ -41,6 +41,12 @@ public class HomeController {
     @FXML
     private ImageView postPreviewImageView;
 
+    @FXML
+    private Label charCountLabel;
+
+    @FXML
+    private Button postButton;
+
     private String username;
     private String selectedImagePath = "";
 
@@ -57,6 +63,30 @@ public class HomeController {
     @FXML
     public void initialize() {
         instance = this;
+
+        if (tweetTextArea != null && charCountLabel != null && postButton != null) {
+            tweetTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue == null) {
+                    charCountLabel.setText("280");
+                    postButton.setDisable(false);
+                    return;
+                }
+                int length = newValue.length();
+                int remaining = 280 - length;
+                charCountLabel.setText(String.valueOf(remaining));
+
+                if (remaining < 0) {
+                    charCountLabel.setStyle("-fx-text-fill: #f4212e; -fx-font-weight: bold;");
+                    postButton.setDisable(true);
+                } else if (remaining <= 20) {
+                    charCountLabel.setStyle("-fx-text-fill: #ffd400; -fx-font-weight: bold;");
+                    postButton.setDisable(false);
+                } else {
+                    charCountLabel.setStyle("-fx-text-fill: #71767b; -fx-font-weight: normal;");
+                    postButton.setDisable(false);
+                }
+            });
+        }
     }
 
     public void setUsername(String username) {
@@ -96,6 +126,11 @@ public class HomeController {
 
         if (tweetText.isEmpty() && selectedImagePath.isEmpty()) {
             System.out.println("Nothing to post.");
+            return;
+        }
+
+        if (tweetText.length() > 280) {
+            System.err.println("Tweet exceeds 280 characters.");
             return;
         }
 
@@ -195,9 +230,7 @@ public class HomeController {
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
         header.setOnMouseClicked(e -> { e.consume(); navigateToProfile(authorUsername); });
 
-        // Delete Button logic
         String currentUser = SessionManager.getInstance().getUsername();
-        // Only show delete if I have access.
         if (authorUsername.equalsIgnoreCase(currentUser) || retweetedBy.equalsIgnoreCase(currentUser)) {
             javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
             HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
@@ -231,7 +264,6 @@ public class HomeController {
             } catch (Exception ignored) {}
         }
 
-        // Like Button
         Button likeBtn = new Button();
         final int[] localLikeCount = {likeCount};
         final boolean[] localIsLiked = {isLikedByMe};
@@ -255,7 +287,6 @@ public class HomeController {
             }
         });
 
-        // Retweet Button
         Button retweetBtn = new Button();
         final int[] localRtCount = {rtCount};
         final boolean[] localIsRetweeted = {isRetweetedByMe};
@@ -279,7 +310,6 @@ public class HomeController {
             }
         });
 
-        // Reply Button
         Button replyBtn = new Button("💬 " + replyCount);
         replyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand;");
         replyBtn.setOnAction(e -> { e.consume(); openTweetDetails(originalContentId); });
@@ -288,18 +318,15 @@ public class HomeController {
         actionsBar.setPadding(new javafx.geometry.Insets(5, 0, 5, 0));
         card.getChildren().add(actionsBar);
 
-        // --- FOOTER ---
         Label timeLabel = new Label(createdAt);
         timeLabel.getStyleClass().add("time-label");
         card.getChildren().add(timeLabel);
 
-        // Click card to see details
         card.setOnMouseClicked(event -> {
             if (event.getTarget() instanceof Button) return;
             openTweetDetails(originalContentId);
         });
 
-        // Add to container
         if (prepend) feedContainer.getChildren().add(0, card);
         else feedContainer.getChildren().add(card);
     }
@@ -591,6 +618,7 @@ public class HomeController {
             e.printStackTrace();
         }
     }
+
     public void removeTweetFromFeed(int tweetId) {
         feedContainer.getChildren().removeIf(node ->
                 node instanceof VBox && Integer.valueOf(tweetId).equals(node.getUserData())
