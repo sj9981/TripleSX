@@ -158,9 +158,6 @@ public class TweetDetailsController {
         HBox actions = new HBox(20, likeBtn, rtBtn);
         card.getChildren().add(actions);
         mainTweetContainer.getChildren().add(card);
-
-        card.getChildren().add(likeBtn);
-        mainTweetContainer.getChildren().add(card);
     }
 
     private void updateRtBtnUI(Button btn, boolean isRetweeted, int count) {

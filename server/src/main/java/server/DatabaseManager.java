@@ -255,17 +255,22 @@ public class DatabaseManager
 
     public static JSONObject getTweetDetails(int tweetId, String loggedInUsername) {
         JSONObject result = new JSONObject();
+        result.put("success", false);
+
         int loggedInUserId = getUserIdByUsername(loggedInUsername);
 
+        // main tweet
         String mainSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                "(SELECT COUNT(*) FROM tweets WHERE is_retweet_of = t.id) AS retweet_count, " +
+                "EXISTS (SELECT 1 FROM tweets WHERE is_retweet_of = t.id AND user_id = ?) AS user_retweeted, " +
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
                 "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
                 "WHERE t.id = ?";
-
+        // replies
         String repliesSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
@@ -277,9 +282,12 @@ public class DatabaseManager
                 "ORDER BY t.created_at ASC";
 
         try (Connection conn = getConnection()) {
+            // 1. Fetch Main Tweet
             try (PreparedStatement ps = conn.prepareStatement(mainSql)) {
                 ps.setInt(1, loggedInUserId);
-                ps.setInt(2, tweetId);
+                ps.setInt(2, loggedInUserId);
+                ps.setInt(3, tweetId);
+
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         JSONObject tweet = new JSONObject();
@@ -291,20 +299,24 @@ public class DatabaseManager
 
                         Timestamp ts = rs.getTimestamp("created_at");
                         tweet.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
+
                         tweet.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
                         tweet.put("like_count", rs.getInt("like_count"));
                         tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                        tweet.put("retweet_count", rs.getInt("retweet_count"));
+                        tweet.put("is_retweeted", rs.getBoolean("user_retweeted"));
                         tweet.put("reply_count", rs.getInt("reply_count"));
 
                         result.put("tweet", tweet);
+                        result.put("success", true);
                     } else {
-                        result.put("success", false);
                         result.put("message", "Tweet not found.");
                         return result;
                     }
                 }
             }
 
+            // Fetch Replies
             JSONArray replies = new JSONArray();
             try (PreparedStatement ps = conn.prepareStatement(repliesSql)) {
                 ps.setInt(1, loggedInUserId);
@@ -320,6 +332,7 @@ public class DatabaseManager
 
                         Timestamp ts = rs.getTimestamp("created_at");
                         reply.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
+
                         reply.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
                         reply.put("like_count", rs.getInt("like_count"));
                         reply.put("is_liked", rs.getInt("is_liked") > 0);
@@ -334,8 +347,9 @@ public class DatabaseManager
             result.put("replies", replies);
 
         } catch (SQLException e) {
+            e.printStackTrace();
             result.put("success", false);
-            result.put("message", "Error getting tweet details: " + e.getMessage());
+            result.put("message", "Database error: " + e.getMessage());
         }
 
         return result;
