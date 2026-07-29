@@ -31,6 +31,7 @@ public class ProfileController
     @FXML private Label followerCountLabel;
     @FXML private Label followingCountLabel;
     @FXML private VBox userTweetsContainer;
+    @FXML private ImageView bannerImageView;
 
     private String currentUsername;
 
@@ -80,11 +81,7 @@ public class ProfileController
     private void loadProfileData() {
         try {
             JSONObject response = NetworkManager.getInstance().getUserProfile(currentUsername);
-
-            if (!response.optBoolean("success", false)) {
-                System.err.println("Profile request failed.");
-                return;
-            }
+            if (response == null || !response.optBoolean("success", false)) return;
 
             this.isFollowingCurrent = response.optBoolean("isFollowing", false);
             updateFollowButtonUI();
@@ -92,11 +89,23 @@ public class ProfileController
             JSONObject user = response.getJSONObject("user");
             displayNameLabel.setText(user.optString("displayName", "No Name"));
             usernameLabel.setText("@" + user.optString("username", currentUsername));
-            bioLabel.setText(user.optString("bio", "No bio yet..."));
+            bioLabel.setText(user.optString("bio", ""));
             followerCountLabel.setText(String.valueOf(user.optInt("followerCount", 0)));
             followingCountLabel.setText(String.valueOf(user.optInt("followingCount", 0)));
 
             loadAvatarImage(user.optString("avatarPath", ""));
+
+            String bPath = user.optString("bannerPath", "");
+            if (bPath != null && !bPath.trim().isEmpty() && !bPath.equals("null")) {
+                Image bannerImg = resolveImage(bPath);
+                if (bannerImg != null) {
+                    bannerImageView.setImage(bannerImg);
+                } else {
+                    showDefaultBanner();
+                }
+            } else {
+                showDefaultBanner();
+            }
 
             JSONArray tweets = response.optJSONArray("tweets");
             userTweetsContainer.getChildren().clear();
@@ -107,7 +116,14 @@ public class ProfileController
             }
         } catch (Exception e) {
             e.printStackTrace();
-            setDefaultAvatar();
+        }
+    }
+
+    private void showDefaultBanner() {
+        try {
+            bannerImageView.setImage(new Image(getClass().getResourceAsStream("/default-banner.png")));
+        } catch (Exception e) {
+            bannerImageView.setImage(null);
         }
     }
 

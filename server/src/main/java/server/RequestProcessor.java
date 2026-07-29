@@ -153,6 +153,8 @@ public class RequestProcessor {
             String email = request.optString("email", "").trim();
             String password = request.optString("password", "").trim();
 
+            String banner = null;
+
             if (username.isEmpty() || password.isEmpty()) {
                 res.put("success", false);
                 res.put("message", "Username and password are required.");
@@ -166,7 +168,6 @@ public class RequestProcessor {
             String displayName = request.optString("displayName", username);
             String bio = request.optString("bio", "");
             String avatar = request.optString("avatar", "default.png");
-            String banner = request.optString("banner", "default_banner.png");
 
             boolean success = DatabaseManager.registerUser(username, email, password, displayName, bio, avatar, banner);
             res.put("success", success);
@@ -368,6 +369,7 @@ public class RequestProcessor {
         return res;
     }
 
+    // متد کامل و آپدیت شده در RequestProcessor.java
     private JSONObject handleUpdateProfile(JSONObject request) {
         JSONObject res = new JSONObject();
         try {
@@ -376,8 +378,10 @@ public class RequestProcessor {
             String newUsername = request.getString("new_username");
             String newBio = request.getString("bio");
             String avatarPath = request.optString("avatar_path", "");
+            String bannerPath = request.optString("banner_path", "");
 
-            boolean success = DatabaseManager.updateProfile(oldUsername, newName, newUsername, newBio, avatarPath);
+            boolean success = DatabaseManager.updateProfile(oldUsername, newName, newUsername, newBio, avatarPath, bannerPath);
+
             res.put("success", success);
             res.put("message", success ? "Profile updated successfully." : "Profile update failed.");
         } catch (Exception e) {

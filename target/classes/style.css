@@ -308,10 +308,23 @@
 }
 
 .remove-preview-button:hover {
-    -fx-background-color: #f4212e; /* قرمز   هاور */
+    -fx-background-color: #f4212e;
 }
 
 #postPreviewImageView {
     -fx-background-radius: 15;
-    /* برای گرد کردن لبه‌های عکس در JavaFX باید از Clip استفاده کرد یا در کد جاوا اعمال کرد */
+}
+
+.image-button {
+    -fx-background-color: rgba(0, 0, 0, 0.6);
+    -fx-text-fill: white;
+    -fx-background-radius: 50;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+}
+
+.image-button:hover {
+    -fx-background-color: rgba(83, 100, 113, 0.8);
 }
