@@ -48,7 +48,6 @@
             <Region HBox.hgrow="ALWAYS" />
 
             <HBox spacing="10" alignment="CENTER_RIGHT">
-                <!-- NEW: Follow/Unfollow Button -->
                 <Button fx:id="followButton"
                         text="Follow"
                         onAction="#handleFollowAction"
@@ -65,7 +64,6 @@
             </HBox>
         </HBox>
 
-        <!-- User Info Text -->
         <VBox spacing="2" style="-fx-translate-y: -25;">
             <Label fx:id="displayNameLabel"
                    style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: white;"/>
@@ -82,8 +80,12 @@
             </Label>
         </VBox>
 
-        <!-- Stats (Followers/Following) -->
         <HBox spacing="20" style="-fx-translate-y: -10;">
+            <HBox spacing="5">
+                <Label fx:id="tweetCountLabel" text="0" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+                <Label text="Posts" style="-fx-text-fill: #71767b;"/>
+            </HBox>
+
             <HBox spacing="5" onMouseClicked="#showFollowing" style="-fx-cursor: hand;">
                 <Label fx:id="followingCountLabel" text="0" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
                 <Label text="Following" style="-fx-text-fill: #71767b;"/>

@@ -32,10 +32,10 @@ public class ProfileController
     @FXML private Label bioLabel;
     @FXML private Label followerCountLabel;
     @FXML private Label followingCountLabel;
+    @FXML private Label tweetCountLabel;
     @FXML private VBox userTweetsContainer;
     @FXML private ImageView bannerImageView;
     @FXML private Button followButton;
-
     private String currentUsername;
     private boolean isFollowingCurrent;
 
@@ -94,6 +94,10 @@ public class ProfileController
             bioLabel.setText(user.optString("bio", ""));
             followerCountLabel.setText(String.valueOf(user.optInt("followerCount", 0)));
             followingCountLabel.setText(String.valueOf(user.optInt("followingCount", 0)));
+
+            if (tweetCountLabel != null) {
+                tweetCountLabel.setText(String.valueOf(user.optInt("tweetCount", 0)));
+            }
 
             loadAvatarImage(user.optString("avatarPath", ""));
 

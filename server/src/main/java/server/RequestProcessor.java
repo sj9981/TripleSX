@@ -317,6 +317,7 @@ public class RequestProcessor {
             int userId = DatabaseManager.getUserIdByUsername(username);
             int followerCount = DatabaseManager.getFollowerCount(userId);
             int followingCount = DatabaseManager.getFollowingCount(userId);
+            int tweetCount = DatabaseManager.getTweetCount(userId);
 
             String loggedInUser = request.optString("loggedInUser", "");
             boolean isFollowing = false;
@@ -338,6 +339,7 @@ public class RequestProcessor {
             userProfileJson.put("bannerPath", userProfileData.getBannerPath());
             userProfileJson.put("followerCount", followerCount);
             userProfileJson.put("followingCount", followingCount);
+            userProfileJson.put("tweetCount", tweetCount);
 
             res.put("user", userProfileJson);
             res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser));

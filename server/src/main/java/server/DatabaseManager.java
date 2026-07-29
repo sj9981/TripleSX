@@ -870,4 +870,25 @@ public class DatabaseManager
         }
         return -1;
     }
+    public static int getTweetCount(int userId)
+    {
+        String sql = "SELECT COUNT(*) FROM tweets WHERE user_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, userId);
+            try (ResultSet rs = pstmt.executeQuery())
+            {
+                if (rs.next())
+                {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Error getting tweet count: " + e.getMessage());
+        }
+        return 0;
+    }
 }
