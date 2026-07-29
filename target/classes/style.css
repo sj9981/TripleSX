@@ -296,3 +296,22 @@
     -fx-background-radius: 15;
     -fx-border-radius: 15;
 }
+
+.remove-preview-button {
+    -fx-background-color: rgba(0, 0, 0, 0.7);
+    -fx-text-fill: white;
+    -fx-background-radius: 20;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-min-width: 30;
+    -fx-min-height: 30;
+}
+
+.remove-preview-button:hover {
+    -fx-background-color: #f4212e; /* قرمز   هاور */
+}
+
+#postPreviewImageView {
+    -fx-background-radius: 15;
+    /* برای گرد کردن لبه‌های عکس در JavaFX باید از Clip استفاده کرد یا در کد جاوا اعمال کرد */
+}
