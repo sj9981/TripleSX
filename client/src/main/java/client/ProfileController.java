@@ -32,10 +32,11 @@ public class ProfileController
     @FXML private Label bioLabel;
     @FXML private Label followerCountLabel;
     @FXML private Label followingCountLabel;
+    @FXML private Label tweetCountLabel;
     @FXML private VBox userTweetsContainer;
     @FXML private ImageView bannerImageView;
     @FXML private Button followButton;
-
+    @FXML private Label postsLabel;
     private String currentUsername;
     private boolean isFollowingCurrent;
 
@@ -94,6 +95,16 @@ public class ProfileController
             bioLabel.setText(user.optString("bio", ""));
             followerCountLabel.setText(String.valueOf(user.optInt("followerCount", 0)));
             followingCountLabel.setText(String.valueOf(user.optInt("followingCount", 0)));
+
+            int tweetCount = user.optInt("tweetCount", 0);
+
+            if (tweetCountLabel != null) {
+                tweetCountLabel.setText(String.valueOf(tweetCount));
+            }
+
+            if (postsLabel != null) {
+                postsLabel.setText(tweetCount == 1 ? "Post" : "Posts");
+            }
 
             loadAvatarImage(user.optString("avatarPath", ""));
 
@@ -297,16 +308,29 @@ public class ProfileController
         }
         tweetBox.getChildren().add(topRow);
 
-        if (imagePath != null && !imagePath.isEmpty()) {
-            try {
-                File file = new File(imagePath);
-                if (file.exists()) {
-                    ImageView imageView = new ImageView(new Image(file.toURI().toString()));
-                    imageView.setFitWidth(350);
-                    imageView.setPreserveRatio(true);
-                    tweetBox.getChildren().add(imageView);
+        JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty()) {
+                    try {
+                        File file = new File(path);
+                        if (file.exists()) {
+                            ImageView imageView = new ImageView(new Image(file.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                imageView.setFitWidth(350);
+                            } else {
+                                imageView.setFitWidth(170);
+                            }
+                            imageView.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(imageView);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {}
+            }
+            tweetBox.getChildren().add(imagesLayout);
         }
 
         Button likeBtn = new Button();

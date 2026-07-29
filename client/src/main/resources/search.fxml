@@ -11,27 +11,22 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="client.SearchController">
 
-    <VBox prefWidth="250.0" spacing="10"
+    <VBox maxWidth="275.0" minWidth="220.0" prefWidth="250.0" spacing="10"
           style="-fx-border-color: #2f3336; -fx-border-width: 0 1 0 0; -fx-background-color: #000000;">
         <padding>
-            <Insets top="20" left="20" right="10" bottom="20"/>
+            <Insets bottom="20" left="20" right="10" top="20" />
         </padding>
 
-        <Label text="  𝕏"
-               style="-fx-text-fill: white;
-              -fx-font-size: 38px;
-              -fx-font-weight: bold;
-              -fx-padding: 0 0 20 10;"/>
+        <Label style="-fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: bold; -fx-padding: 0 0 20 10;" text="𝕏" />
 
-        <Region prefHeight="20"/>
-        <Button text="  🏠" onAction="#handleGoToHome" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
-        <Button text="  🔎" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity" style="-fx-background-color: #181818;"/>
-        <Button text="  🔔" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
-        <Button text="  💬" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
-        <Button text="  👤" onAction="#handleGoToProfile" styleClass="sidebar-button" prefWidth="210.0" maxWidth="Infinity"/>
+        <Button maxWidth="Infinity" onAction="#handleGoToHome" styleClass="sidebar-button" text="  🏠  Home" />
+        <Button maxWidth="Infinity" styleClass="sidebar-button" text="  🔎  Explore" style="-fx-background-color: #181818;" />
+        <Button maxWidth="Infinity" styleClass="sidebar-button" text="  🔔  Notifications" />
+        <Button maxWidth="Infinity" styleClass="sidebar-button" text="  💬  Messages" />
+        <Button maxWidth="Infinity" onAction="#handleGoToProfile" styleClass="sidebar-button" text="  👤  Profile" />
 
-        <Region VBox.vgrow="ALWAYS"/>
-        <Button text="Logout" onAction="#handleLogout" styleClass="logout-button" maxWidth="Infinity"/>
+        <Region VBox.vgrow="ALWAYS" />
+        <Button maxWidth="Infinity" onAction="#handleLogout" styleClass="logout-button" text="Logout" />
     </VBox>
 
     <ScrollPane fitToWidth="true"
@@ -73,7 +68,6 @@
             </VBox>
         </content>
     </ScrollPane>
-
 
     <VBox prefWidth="300.0" spacing="15"
           style="-fx-border-color: #2f3336; -fx-border-width: 0 0 0 1; -fx-background-color: #000000;">

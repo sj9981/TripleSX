@@ -141,18 +141,29 @@ public class SearchController {
         javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 14, "#e7e9ea");
         card.getChildren().addAll(header, contentFlow);
 
-        if (!imagePath.trim().isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
-            try {
-                File imageFile = new File(imagePath);
-                if (imageFile.exists()) {
-                    Image image = new Image(imageFile.toURI().toString());
-                    ImageView imageView = new ImageView(image);
-                    imageView.setFitWidth(300);
-                    imageView.setPreserveRatio(true);
-                    card.getChildren().add(imageView);
+        JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty() && !"null".equalsIgnoreCase(path)) {
+                    try {
+                        File imageFile = new File(path);
+                        if (imageFile.exists()) {
+                            ImageView imageView = new ImageView(new Image(imageFile.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                imageView.setFitWidth(300);
+                            } else {
+                                imageView.setFitWidth(150);
+                            }
+                            imageView.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(imageView);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {
             }
+            card.getChildren().add(imagesLayout);
         }
 
         Label timeLabel = new Label(createdAt);

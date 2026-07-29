@@ -53,14 +53,7 @@
                             <VBox HBox.hgrow="ALWAYS" spacing="10">
                                 <TextArea fx:id="tweetTextArea" prefHeight="100" promptText="What's happening?!" styleClass="tweet-box" wrapText="true" />
 
-                                <StackPane fx:id="imagePreviewPane" visible="false" managed="false" alignment="TOP_LEFT">
-                                    <ImageView fx:id="postPreviewImageView" fitWidth="400" preserveRatio="true" />
-                                    <Button text="✕" onAction="#handleRemovePreview" styleClass="remove-preview-button" StackPane.alignment="TOP_RIGHT">
-                                        <StackPane.margin>
-                                            <Insets top="5" right="5"/>
-                                        </StackPane.margin>
-                                    </Button>
-                                </StackPane>
+                                <HBox fx:id="imagePreviewContainer" spacing="10" visible="false" managed="false" style="-fx-padding: 5 0 5 0;" />
                             </VBox>
                         </HBox>
 
