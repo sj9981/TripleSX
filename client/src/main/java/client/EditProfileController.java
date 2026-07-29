@@ -79,6 +79,7 @@ public class EditProfileController {
     public void setUsername(String username) {
         this.currentUsername = username;
         loadAvatarFromDatabase();
+        loadBannerFromDatabase();
     }
 
     public void initUserData(String name, String username, String bio) {
@@ -87,6 +88,7 @@ public class EditProfileController {
         bioField.setText(bio);
         this.currentUsername = username;
         loadAvatarFromDatabase();
+        loadBannerFromDatabase();
     }
 
     @FXML
@@ -138,7 +140,6 @@ public class EditProfileController {
         String newName = nameField.getText().trim();
         String newUsername = usernameField.getText().trim();
         String newBio = bioField.getText().trim();
-
 
         if (newName.isEmpty() || newUsername.isEmpty()) {
             showAlert("Error", "Name and Username cannot be empty.");
@@ -276,20 +277,6 @@ public class EditProfileController {
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    private void showDefaultAvatar() {
-        currentAvatarPath = null;
-
-        if (defaultAvatarImage != null) {
-            profileImageView.setImage(defaultAvatarImage);
-        } else {
-            profileImageView.setImage(null);
-        }
-
-        if (removePhotoButton != null) {
-            removePhotoButton.setDisable(true);
         }
     }
 

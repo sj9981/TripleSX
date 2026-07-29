@@ -54,8 +54,9 @@
                               promptText="Post your reply"
                               styleClass="tweet-box"
                               wrapText="true"/>
-                    <HBox alignment="CENTER_RIGHT">
-                        <Button text="Reply" onAction="#handlePostReply" styleClass="post-button"/>
+                    <HBox alignment="CENTER_RIGHT" spacing="15">
+                        <Label fx:id="replyCharCountLabel" text="280" style="-fx-text-fill: #71767b; -fx-font-size: 14px;" />
+                        <Button fx:id="replyButton" text="Reply" onAction="#handlePostReply" styleClass="post-button"/>
                     </HBox>
                 </VBox>
 

@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "Sa123456*";
+    private static final String PASSWORD = "12345";
     private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -538,7 +538,7 @@ public class DatabaseManager
                         "u.username AS person_who_tweeted, " +
                         "COALESCE(orig_u.username, u.username) AS author_username, " +
                         "COALESCE(orig_u.display_name, u.display_name) AS author_display_name, " +
-                        "COALESCE(orig_u.avatar_path, u.avatar_path) AS author_avatar, " + // This was missing in mapping
+                        "COALESCE(orig_u.avatar_path, u.avatar_path) AS author_avatar, " +
                         "COALESCE(orig_t.content, t.content) AS final_content, " +
                         "t.created_at, " +
                         "COALESCE(orig_tm.media_path, tm.media_path) AS final_media_path, " +
