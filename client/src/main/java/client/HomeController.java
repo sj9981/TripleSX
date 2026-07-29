@@ -139,9 +139,9 @@ public class HomeController {
         addTweetToFeed(tweetJson, true);
     }
 
-    public void addTweetToFeed(JSONObject tweetJson, boolean prepend)
-    {
-        int tweetId = tweetJson.optInt("tweet_id", -1);
+    public void addTweetToFeed(JSONObject tweetJson, boolean prepend) {
+        int cardUiId = tweetJson.optInt("tweet_id", -1);
+        int originalContentId = tweetJson.optInt("original_tweet_id", cardUiId);
         String authorUsername = tweetJson.optString("username", "Unknown");
         String displayName = tweetJson.optString("display_name", authorUsername);
         String text = tweetJson.optString("content", "");
@@ -151,19 +151,20 @@ public class HomeController {
 
         boolean isRetweet = tweetJson.optBoolean("is_retweet", false);
         String retweetedBy = tweetJson.optString("retweeted_by", "");
+
         int rtCount = tweetJson.optInt("retweet_count", 0);
-        boolean isRetweeted = tweetJson.optBoolean("is_retweeted", false);
+        boolean isRetweetedByMe = tweetJson.optBoolean("is_retweeted", false);
 
         int likeCount = tweetJson.optInt("like_count", 0);
-        boolean isLiked = tweetJson.optBoolean("is_liked", false);
+        boolean isLikedByMe = tweetJson.optBoolean("is_liked", false);
         int replyCount = tweetJson.optInt("reply_count", 0);
 
         VBox card = new VBox(8);
+        card.setUserData(cardUiId);
         card.getStyleClass().add("tweet-card");
         card.setStyle("-fx-cursor: hand;");
 
-        if (isRetweet)
-        {
+        if (isRetweet) {
             Label rtHeader = new Label("🔄 " + retweetedBy + " Retweeted");
             rtHeader.setStyle("-fx-text-fill: #71767b; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 0 0 0 35;");
             card.getChildren().add(rtHeader);
@@ -185,14 +186,22 @@ public class HomeController {
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
         header.setOnMouseClicked(e -> { e.consume(); navigateToProfile(authorUsername); });
 
+        // Delete Button logic
         String currentUser = SessionManager.getInstance().getUsername();
-        if (authorUsername.equalsIgnoreCase(currentUser) && !isRetweet)
-        {
+        // Only show delete if I have access.
+        if (authorUsername.equalsIgnoreCase(currentUser) || retweetedBy.equalsIgnoreCase(currentUser)) {
             javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
             HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
             Button deleteBtn = new Button("🗑");
             deleteBtn.getStyleClass().add("delete-button");
-            deleteBtn.setOnAction(event -> confirmAndDelete(tweetId, card));
+            deleteBtn.setOnAction(event -> {
+                event.consume();
+                if (isRetweet && retweetedBy.equalsIgnoreCase(currentUser)) {
+                    NetworkManager.getInstance().unretweet(originalContentId);
+                } else {
+                    confirmAndDelete(cardUiId, card);
+                }
+            });
             header.getChildren().addAll(spacer, deleteBtn);
         }
 
@@ -201,13 +210,10 @@ public class HomeController {
         contentLabel.setWrapText(true);
         card.getChildren().addAll(header, contentLabel);
 
-        if (!imagePath.isEmpty() && !"null".equalsIgnoreCase(imagePath))
-        {
-            try
-            {
+        if (!imagePath.isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
+            try {
                 File imgFile = new File(imagePath);
-                if (imgFile.exists())
-                {
+                if (imgFile.exists()) {
                     ImageView iv = new ImageView(new Image(imgFile.toURI().toString()));
                     iv.setFitWidth(400);
                     iv.setPreserveRatio(true);
@@ -216,56 +222,51 @@ public class HomeController {
             } catch (Exception ignored) {}
         }
 
+        // Like Button
         Button likeBtn = new Button();
-        updateLikeButtonUI(likeBtn, isLiked, likeCount);
+        updateLikeButtonUI(likeBtn, isLikedByMe, likeCount);
         likeBtn.setOnAction(e -> {
-            if (likeBtn.getText().contains("♡")) {
-                if (NetworkManager.getInstance().likeTweet(tweetId).optBoolean("success")) loadTweetsFromServer();
-            }
-            else
-            {
-                if (NetworkManager.getInstance().unlikeTweet(tweetId).optBoolean("success")) loadTweetsFromServer();
+            e.consume();
+            if (isLikedByMe) {
+                NetworkManager.getInstance().unlikeTweet(originalContentId);
+            } else {
+                NetworkManager.getInstance().likeTweet(originalContentId);
             }
         });
+
+        // Retweet Button
         Button retweetBtn = new Button("🔄 " + rtCount);
-        updateRetweetButtonUI(retweetBtn, isRetweeted);
-
+        updateRetweetButtonUI(retweetBtn, isRetweetedByMe);
         retweetBtn.setOnAction(e -> {
-            if (isRetweeted)
-            {
-                JSONObject res = NetworkManager.getInstance().unretweet(tweetId);
-                if (res.optBoolean("success"))
-                {
-                    loadTweetsFromServer();
-                }
-            }
-            else
-            {
-                JSONObject res = NetworkManager.getInstance().retweet(tweetId);
-                if (res.optBoolean("success"))
-                {
-                    loadTweetsFromServer();
-                }
+            e.consume();
+            if (isRetweetedByMe) {
+                NetworkManager.getInstance().unretweet(originalContentId);
+            } else {
+                NetworkManager.getInstance().retweet(originalContentId);
             }
         });
 
+        // Reply Button
         Button replyBtn = new Button("💬 " + replyCount);
         replyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand;");
-        replyBtn.setOnAction(e -> openTweetDetails(tweetId));
+        replyBtn.setOnAction(e -> { e.consume(); openTweetDetails(originalContentId); });
 
-        HBox actionsBar = new HBox(20, likeBtn,  replyBtn, retweetBtn);
+        HBox actionsBar = new HBox(20, likeBtn, replyBtn, retweetBtn);
         actionsBar.setPadding(new javafx.geometry.Insets(5, 0, 5, 0));
         card.getChildren().add(actionsBar);
 
+        // --- FOOTER ---
         Label timeLabel = new Label(createdAt);
         timeLabel.getStyleClass().add("time-label");
         card.getChildren().add(timeLabel);
 
+        // Click card to see details
         card.setOnMouseClicked(event -> {
             if (event.getTarget() instanceof Button) return;
-            openTweetDetails(tweetId);
+            openTweetDetails(originalContentId);
         });
 
+        // Add to container
         if (prepend) feedContainer.getChildren().add(0, card);
         else feedContainer.getChildren().add(card);
     }
@@ -528,5 +529,10 @@ public class HomeController {
             System.err.println("Could not load Search page: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    public void removeTweetFromFeed(int tweetId) {
+        feedContainer.getChildren().removeIf(node ->
+                node instanceof VBox && Integer.valueOf(tweetId).equals(node.getUserData())
+        );
     }
 }
