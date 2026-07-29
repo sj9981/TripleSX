@@ -247,10 +247,8 @@ public class HomeController {
             header.getChildren().addAll(spacer, deleteBtn);
         }
 
-        Label contentLabel = new Label(text);
-        contentLabel.getStyleClass().add("content-label");
-        contentLabel.setWrapText(true);
-        card.getChildren().addAll(header, contentLabel);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 15, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
         if (!imagePath.isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
             try {

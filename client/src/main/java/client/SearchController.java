@@ -136,11 +136,8 @@ public class SearchController {
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
 
-        Label contentLabel = new Label(text);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 14px;");
-        contentLabel.setWrapText(true);
-
-        card.getChildren().addAll(header, contentLabel);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 14, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
         if (!imagePath.trim().isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
             try {
@@ -270,6 +267,12 @@ public class SearchController {
             stage.show();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+   public void prefillAndSearch(String query) {
+        if (searchField != null) {
+            searchField.setText(query);
+            handleSearch();
         }
     }
 }

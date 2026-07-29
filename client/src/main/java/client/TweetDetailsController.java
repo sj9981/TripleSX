@@ -120,11 +120,8 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-        Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 18px;");
-        contentLabel.setWrapText(true);
-
-        card.getChildren().addAll(header, contentLabel);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 18, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
         if (!imagePath.trim().isEmpty()) {
             try {
@@ -225,14 +222,12 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-        Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 14px;");
-        contentLabel.setWrapText(true);
+       javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 14, "#e7e9ea");
 
         Label timeLabel = new Label(createdAt);
         timeLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
 
-        card.getChildren().addAll(header, contentLabel, timeLabel);
+        card.getChildren().addAll(header, contentFlow, timeLabel);
         card.setOnMouseClicked(e -> setTweetId(replyId));
 
         repliesContainer.getChildren().add(card);

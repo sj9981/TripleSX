@@ -279,13 +279,11 @@ public class ProfileController
         tweetBox.setStyle("-fx-cursor: hand;");
 
         HBox topRow = new HBox();
-        Label contentLabel = new Label(content);
-        contentLabel.getStyleClass().add("content-label");
-        contentLabel.setWrapText(true);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 15, "#e7e9ea");
 
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        topRow.getChildren().addAll(contentLabel, spacer);
+        topRow.getChildren().addAll(contentFlow, spacer);
 
         String loggedInUser = SessionManager.getInstance().getUsername();
         if (loggedInUser != null && loggedInUser.equalsIgnoreCase(currentUsername)) {
