@@ -43,7 +43,7 @@ public class HashtagUtils {
         return textFlow;
     }
 
-    private static void navigateToSearchWithQuery(Scene currentScene, String query) {
+    public static void navigateToSearchWithQuery(Scene currentScene, String query) {
         try {
             FXMLLoader loader = new FXMLLoader(HashtagUtils.class.getResource("/search.fxml"));
             Parent root = loader.load();

@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import javafx.scene.control.Hyperlink;
+
 public class HomeController {
     private static HomeController instance;
 
@@ -621,5 +623,13 @@ public class HomeController {
         feedContainer.getChildren().removeIf(node ->
                 node instanceof VBox && Integer.valueOf(tweetId).equals(node.getUserData())
         );
+    }
+
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            HashtagUtils.navigateToSearchWithQuery(link.getScene(), link.getText());
+        }
     }
 }

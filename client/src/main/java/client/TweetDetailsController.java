@@ -15,6 +15,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
+import javafx.scene.control.Hyperlink;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -335,5 +336,12 @@ public class TweetDetailsController {
             Stage stage = (Stage) mainTweetContainer.getScene().getWindow();
             stage.setScene(new Scene(root));
         } catch (IOException e) { e.printStackTrace(); }
+    }
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            HashtagUtils.navigateToSearchWithQuery(link.getScene(), link.getText());
+        }
     }
 }

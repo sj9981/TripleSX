@@ -12,6 +12,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
+import javafx.scene.control.Hyperlink;
+
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import org.json.JSONArray;
@@ -273,6 +275,13 @@ public class SearchController {
         if (searchField != null) {
             searchField.setText(query);
             handleSearch();
+        }
+    }
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            prefillAndSearch(link.getText());
         }
     }
 }
