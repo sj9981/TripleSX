@@ -12,6 +12,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
+import javafx.scene.control.Hyperlink;
+
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import org.json.JSONArray;
@@ -136,11 +138,8 @@ public class SearchController {
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
 
-        Label contentLabel = new Label(text);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 14px;");
-        contentLabel.setWrapText(true);
-
-        card.getChildren().addAll(header, contentLabel);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 14, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
         if (!imagePath.trim().isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
             try {
@@ -270,6 +269,19 @@ public class SearchController {
             stage.show();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+   public void prefillAndSearch(String query) {
+        if (searchField != null) {
+            searchField.setText(query);
+            handleSearch();
+        }
+    }
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            prefillAndSearch(link.getText());
         }
     }
 }

@@ -84,9 +84,9 @@
         <VBox spacing="10" styleClass="trends-panel">
             <Label text="What's happening"
                    style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: 800;"/>
-            <Label text="#Java" style="-fx-text-fill: #1d9bf0;"/>
-            <Label text="#TripleSX" style="-fx-text-fill: #1d9bf0;"/>
-            <Label text="#I_need_help" style="-fx-text-fill: #1d9bf0;"/>
+            <Hyperlink text="#Java" onAction="#handleTrendClick" style="-fx-text-fill: #1d9bf0; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;"/>
+            <Hyperlink text="#TripleSX" onAction="#handleTrendClick" style="-fx-text-fill: #1d9bf0; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;"/>
+            <Hyperlink text="#I_need_help" onAction="#handleTrendClick" style="-fx-text-fill: #1d9bf0; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;"/>
         </VBox>
     </VBox>
 

@@ -11,6 +11,7 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.control.Hyperlink?>
 
 <HBox prefHeight="700.0" prefWidth="1000.0"
       style="-fx-background-color: black;"
@@ -87,12 +88,12 @@
 
             <VBox spacing="5">
                 <Label style="-fx-text-fill: #71767b; -fx-font-size: 13px;" text="Trending in Technology" />
-                <Label style="-fx-text-fill: white; -fx-font-weight: bold;" text="#Java" />
+                <Hyperlink text="#Java" onAction="#handleTrendClick" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;" />
             </VBox>
 
             <VBox spacing="5">
                 <Label style="-fx-text-fill: #71767b; -fx-font-size: 13px;" text="Programming · Trending" />
-                <Label style="-fx-text-fill: white; -fx-font-weight: bold;" text="#TripleSX" />
+                <Hyperlink text="#TripleSX" onAction="#handleTrendClick" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;" />
             </VBox>
         </VBox>
     </VBox>

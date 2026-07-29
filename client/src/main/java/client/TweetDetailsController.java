@@ -15,6 +15,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
+import javafx.scene.control.Hyperlink;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -120,11 +121,8 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-        Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 18px;");
-        contentLabel.setWrapText(true);
-
-        card.getChildren().addAll(header, contentLabel);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 18, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
         if (!imagePath.trim().isEmpty()) {
             try {
@@ -225,14 +223,12 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-        Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 14px;");
-        contentLabel.setWrapText(true);
+       javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 14, "#e7e9ea");
 
         Label timeLabel = new Label(createdAt);
         timeLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
 
-        card.getChildren().addAll(header, contentLabel, timeLabel);
+        card.getChildren().addAll(header, contentFlow, timeLabel);
         card.setOnMouseClicked(e -> setTweetId(replyId));
 
         repliesContainer.getChildren().add(card);
@@ -340,5 +336,12 @@ public class TweetDetailsController {
             Stage stage = (Stage) mainTweetContainer.getScene().getWindow();
             stage.setScene(new Scene(root));
         } catch (IOException e) { e.printStackTrace(); }
+    }
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            HashtagUtils.navigateToSearchWithQuery(link.getScene(), link.getText());
+        }
     }
 }

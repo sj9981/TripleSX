@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import javafx.scene.control.Hyperlink;
+
 public class HomeController {
     private static HomeController instance;
 
@@ -247,10 +249,8 @@ public class HomeController {
             header.getChildren().addAll(spacer, deleteBtn);
         }
 
-        Label contentLabel = new Label(text);
-        contentLabel.getStyleClass().add("content-label");
-        contentLabel.setWrapText(true);
-        card.getChildren().addAll(header, contentLabel);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 15, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
         if (!imagePath.isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
             try {
@@ -623,5 +623,13 @@ public class HomeController {
         feedContainer.getChildren().removeIf(node ->
                 node instanceof VBox && Integer.valueOf(tweetId).equals(node.getUserData())
         );
+    }
+
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            HashtagUtils.navigateToSearchWithQuery(link.getScene(), link.getText());
+        }
     }
 }
