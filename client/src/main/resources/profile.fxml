@@ -83,7 +83,7 @@
         <HBox spacing="20" style="-fx-translate-y: -10;">
             <HBox spacing="5">
                 <Label fx:id="tweetCountLabel" text="0" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
-                <Label text="Posts" style="-fx-text-fill: #71767b;"/>
+                <Label fx:id="postsLabel" text="Posts" style="-fx-text-fill: #71767b;"/>
             </HBox>
 
             <HBox spacing="5" onMouseClicked="#showFollowing" style="-fx-cursor: hand;">
