@@ -424,7 +424,11 @@ public class ProfileController
 
             EditProfileController controller = loader.getController();
             controller.setPreviousScene("/profile.fxml");
-            controller.setUsername(currentUsername);
+
+            String currentName = displayNameLabel.getText() != null ? displayNameLabel.getText() : "";
+            String currentBio = bioLabel.getText() != null ? bioLabel.getText() : "";
+
+            controller.initUserData(currentName, currentUsername, currentBio);
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             double w = stage.getWidth();
@@ -439,7 +443,6 @@ public class ProfileController
             e.printStackTrace();
         }
     }
-
     @FXML
     private void showFollowers() {
         openFollowList(true);
