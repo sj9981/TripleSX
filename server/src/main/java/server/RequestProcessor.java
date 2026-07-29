@@ -80,6 +80,23 @@ public class RequestProcessor {
                     boolean success = DatabaseManager.retweet(rtUser, rtId);
                     response.put("success", success);
                     response.put("message", success ? "Retweeted" : "Failed to retweet");
+                    if (success) {
+                        JSONObject detailsResponse = DatabaseManager.getTweetDetails(rtId, rtUser);
+                        if (detailsResponse.optBoolean("success")) {
+                            JSONObject retweetPush = detailsResponse.getJSONObject("tweet");
+
+                            // mark it as a retweet for the UI
+                            retweetPush.put("type", "NEW_TWEET");
+                            retweetPush.put("is_retweet", true);
+                            retweetPush.put("retweeted_by", rtUser);
+
+                            // Find everyone following the person who retweeted
+                            List<String> followers = DatabaseManager.getFollowers(rtUser);
+                            for (String follower : followers) {
+                                ConnectionManager.sendToClient(follower, retweetPush.toString());
+                            }
+                        }
+                    }
                     break;
                 case "unretweet":
                     String unRtUser = request.getString("username");
