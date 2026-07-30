@@ -5,14 +5,7 @@ import org.json.JSONObject;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
-
-import java.util.Base64;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
 
 public class RequestProcessor {
 
@@ -115,23 +108,7 @@ public class RequestProcessor {
                         }
                     }
                     break;
-                case "download_image":
-                    String fileName = request.getString("file_name");
-                    try {
-                        Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName);
-                        if (Files.exists(filePath)) {
-                            byte[] fileBytes = Files.readAllBytes(filePath);
-                            String encoded = Base64.getEncoder().encodeToString(fileBytes);
-                            response.put("success", true);
-                            response.put("image_data", encoded);
-                        } else {
-                            response.put("success", false);
-                            response.put("message", "File not found on server.");
-                        }
-                    } catch (Exception e) {
-                        response.put("success", false);
-                    }
-                    break;
+
                 case "unretweet":
                     String unUser = request.getString("username");
                     int origId = request.getInt("tweet_id");
@@ -227,50 +204,56 @@ public class RequestProcessor {
 
     private JSONObject handleCreateTweet(JSONObject request) {
         JSONObject res = new JSONObject();
+
         try {
             String username = request.getString("username");
             String content = request.getString("content");
             int parentTweetId = request.optInt("parent_tweet_id", -1);
 
-            // Get the list of Base64 strings sent by the client
-            JSONArray imageDataJson = request.optJSONArray("image_data");
-            List<String> serverFilenames = new ArrayList<>();
-
-            if (imageDataJson != null) {
-                for (int i = 0; i < imageDataJson.length(); i++) {
-                    String base64 = imageDataJson.getString(i);
-                    // Save to server disk and get the new filename
-                    String savedName = saveBase64Image(base64);
-                    if (savedName != null) {
-                        serverFilenames.add(savedName);
-                    }
+            JSONArray imagePathsJson = request.optJSONArray("image_paths");
+            java.util.List<String> imagePaths = new java.util.ArrayList<>();
+            if (imagePathsJson != null) {
+                for (int i = 0; i < imagePathsJson.length(); i++) {
+                    imagePaths.add(imagePathsJson.getString(i));
+                }
+            } else {
+                String imagePath = request.optString("image_path", "").trim();
+                if (!imagePath.isEmpty()) {
+                    imagePaths.add(imagePath);
                 }
             }
 
-            // Save to Database using the new server-side filenames
-            boolean success = DatabaseManager.createTweet(username, content, serverFilenames, parentTweetId);
+            boolean success = DatabaseManager.createTweet(username, content, imagePaths, parentTweetId);
 
             res.put("success", success);
             res.put("message", success ? "Tweet published!" : "Failed to publish tweet.");
 
-            // Broadcast to followers (Send filenames, not full paths)
             if (success && parentTweetId == -1) {
                 List<String> followers = DatabaseManager.getFollowers(username);
-                JSONObject notification = new JSONObject();
-                notification.put("type", "NEW_TWEET");
-                notification.put("username", username);
-                notification.put("content", content);
-                notification.put("image_paths", new JSONArray(serverFilenames)); // Clients will see "uuid.png"
-                notification.put("created_at", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-                for (String f : followers) {
-                    ConnectionManager.sendToClient(f, notification.toString());
+                JSONObject newTweetNotification = new JSONObject();
+                newTweetNotification.put("type", "NEW_TWEET");
+                newTweetNotification.put("username", username);
+                newTweetNotification.put("author", username);
+                newTweetNotification.put("content", content);
+
+                JSONArray pathsArray = new JSONArray();
+                for (String p : imagePaths) {
+                    pathsArray.put(p);
+                }
+                newTweetNotification.put("image_paths", pathsArray);
+                newTweetNotification.put("created_at", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+                for (String follower : followers) {
+                    ConnectionManager.sendToClient(follower, newTweetNotification.toString());
                 }
             }
+
         } catch (Exception e) {
             res.put("success", false);
-            res.put("message", "Error: " + e.getMessage());
+            res.put("message", "Invalid tweet data: " + e.getMessage());
         }
+
         return res;
     }
 
@@ -405,6 +388,7 @@ public class RequestProcessor {
         return res;
     }
 
+    // متد کامل و آپدیت شده در RequestProcessor.java
     private JSONObject handleUpdateProfile(JSONObject request) {
         JSONObject res = new JSONObject();
         try {
@@ -412,30 +396,16 @@ public class RequestProcessor {
             String newName = request.getString("display_name");
             String newUsername = request.getString("new_username");
             String newBio = request.getString("bio");
+            String avatarPath = request.optString("avatar_path", "");
+            String bannerPath = request.optString("banner_path", "");
 
-            // Look for Base64 data from client
-            String avatarBase64 = request.optString("avatar_data", null);
-            String bannerBase64 = request.optString("banner_data", null);
-
-            // Process files if they were sent, otherwise keep current
-            String avatarFilename = saveBase64Image(avatarBase64);
-            String bannerFilename = saveBase64Image(bannerBase64);
-
-            // If user didn't upload a new one, keep the old path (logic in DatabaseManager)
-            boolean success = DatabaseManager.updateProfile(
-                    oldUsername,
-                    newName,
-                    newUsername,
-                    newBio,
-                    avatarFilename,
-                    bannerFilename
-            );
+            boolean success = DatabaseManager.updateProfile(oldUsername, newName, newUsername, newBio, avatarPath, bannerPath);
 
             res.put("success", success);
-            res.put("message", success ? "Profile updated." : "Update failed.");
+            res.put("message", success ? "Profile updated successfully." : "Profile update failed.");
         } catch (Exception e) {
             res.put("success", false);
-            res.put("message", "Error: " + e.getMessage());
+            res.put("message", "Server error during profile update: " + e.getMessage());
         }
         return res;
     }
@@ -486,21 +456,5 @@ public class RequestProcessor {
         res.put("success", true);
         res.put("users", users);
         return res;
-    }
-
-    private static final String UPLOAD_DIR = "server_uploads/";
-
-    private String saveBase64Image(String base64Data) {
-        if (base64Data == null || base64Data.isEmpty()) return null;
-        try {
-            Files.createDirectories(Paths.get(UPLOAD_DIR));
-            String fileName = UUID.randomUUID().toString() + ".png";
-            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-            Files.write(Paths.get(UPLOAD_DIR + fileName), imageBytes);
-            return fileName; // Return only the name to store in DB
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 }

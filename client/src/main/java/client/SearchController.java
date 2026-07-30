@@ -146,20 +146,21 @@ public class SearchController {
             HBox imagesLayout = new HBox(8);
             imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
             for (int j = 0; j < imagePaths.length(); j++) {
-                String fileName = imagePaths.getString(j);
-                if (fileName != null && !fileName.trim().isEmpty() && !"null".equalsIgnoreCase(fileName)) {
-                    // USE resolveImage instead of File
-                    Image tweetImg = resolveImage(fileName);
-                    if (tweetImg != null) {
-                        ImageView imageView = new ImageView(tweetImg);
-                        if (imagePaths.length() == 1) {
-                            imageView.setFitWidth(300);
-                        } else {
-                            imageView.setFitWidth(150);
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty() && !"null".equalsIgnoreCase(path)) {
+                    try {
+                        File imageFile = new File(path);
+                        if (imageFile.exists()) {
+                            ImageView imageView = new ImageView(new Image(imageFile.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                imageView.setFitWidth(300);
+                            } else {
+                                imageView.setFitWidth(150);
+                            }
+                            imageView.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(imageView);
                         }
-                        imageView.setPreserveRatio(true);
-                        imagesLayout.getChildren().add(imageView);
-                    }
+                    } catch (Exception ignored) {}
                 }
             }
             card.getChildren().add(imagesLayout);

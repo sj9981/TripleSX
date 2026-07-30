@@ -95,10 +95,6 @@ public class ProfileController
             bioLabel.setText(user.optString("bio", ""));
             followerCountLabel.setText(String.valueOf(user.optInt("followerCount", 0)));
             followingCountLabel.setText(String.valueOf(user.optInt("followingCount", 0)));
-            String avatarFile = user.optString("avatarPath", "");
-            avatarImageView.setImage(resolveImage(avatarFile, "/default-avatar.png"));
-            String bannerFile = user.optString("bannerPath", "");
-            bannerImageView.setImage(resolveImage(bannerFile, "/default-banner.png"));
 
             int tweetCount = user.optInt("tweetCount", 0);
 
@@ -193,16 +189,65 @@ public class ProfileController
         }
     }
 
-    private Image resolveImage(String pathOrName, String defaultResource) {
-        if (pathOrName == null || pathOrName.trim().isEmpty() || "null".equalsIgnoreCase(pathOrName)) {
+    private Image resolveImage(String path, String defaultResource)
+    {
+        if (path == null || path.trim().isEmpty() || "null".equalsIgnoreCase(path))
+        {
             return loadResourceImage(defaultResource);
         }
 
-        // Sync from server if it's a filename
-        if (!pathOrName.contains("/") && !pathOrName.contains("\\")) {
-            Image img = ImageCacheManager.getImage(pathOrName);
-            if (img != null) return img;
+        try
+        {
+            File file = new File(path);
+            if (file.exists())
+            {
+                Image image = new Image(file.toURI().toString(), false);
+                if (!image.isError())
+                {
+                    return image;
+                }
+            }
         }
+        catch (Exception ignored)
+        {
+        }
+
+        try
+        {
+            String resourcePath = path.startsWith("/") ? path : "/" + path;
+            InputStream stream = getClass().getResourceAsStream(resourcePath);
+
+            if (stream != null)
+            {
+                Image image = new Image(stream);
+                if (!image.isError())
+                {
+                    return image;
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+
+        try
+        {
+            String fileNameOnly = new File(path).getName();
+            InputStream stream = getClass().getResourceAsStream("/" + fileNameOnly);
+
+            if (stream != null)
+            {
+                Image image = new Image(stream);
+                if (!image.isError())
+                {
+                    return image;
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+
         return loadResourceImage(defaultResource);
     }
 
