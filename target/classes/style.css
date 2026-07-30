@@ -328,3 +328,37 @@
 .image-button:hover {
     -fx-background-color: rgba(83, 100, 113, 0.8);
 }
+
+.tweet-card {
+    -fx-transition: -fx-background-color 0.2s;
+}
+.tweet-card:hover {
+    -fx-background-color: #080808;
+}
+
+/* Action Button Blue/Green/Red variants */
+.action-button-like-active {
+    -fx-text-fill: #f4212e;
+    -fx-font-weight: bold;
+}
+.action-button-rt-active {
+    -fx-text-fill: #00ba7c;
+    -fx-font-weight: bold;
+}
+
+.auth-field:focused, .tweet-box:focused {
+    -fx-border-color: #1d9bf0;
+    -fx-border-width: 1;
+}
+
+.trend-item {
+    -fx-padding: 10 15;
+    -fx-cursor: hand;
+}
+.trend-item:hover {
+    -fx-background-color: #1d1f23;
+}
+
+.delete-modal-pane {
+    -fx-effect: dropshadow(three-pass-box, rgba(255,255,255,0.1), 10, 0, 0, 0);
+}
