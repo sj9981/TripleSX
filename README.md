@@ -128,11 +128,11 @@ private static final String PASSWORD = "your_secure_password";
     - `likes` & `follows`: Junction tables for many-to-many social interactions.
 ---
 ## 👥 Contributors
-- Saba Faramarzi (@Saba-frm)
+- Saba Faramarzi (https://github.com/sabafaramarzi1385)
     - Email: saba.faramarzi.1385@gmail.com
-- Saeed Jamali (@Saeed Jamali)
+- Saeed Jamali (https://github.com/sj9981)
     - sj9981@hotmail.com
-- Shayan Edalatjoo
+- Shayan Edalatjoo (https://github.com/Shedalatjoo)
     - ShayanEdalatjoo007@gmail.com
 ---
 ## 📞 Contact & Support
