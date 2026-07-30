@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "123456";
+    private static final String PASSWORD = "12345";
     private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -275,15 +275,23 @@ public class DatabaseManager
                 "JOIN users u ON t.user_id = u.id " +
                 "WHERE t.id = ?";
 
-        String repliesSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, " +
-                "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
-                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
-                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
-                "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
-                "FROM tweets t " +
-                "JOIN users u ON t.user_id = u.id " +
-                "WHERE t.parent_tweet_id = ? " +
-                "ORDER BY t.created_at ASC";
+        String repliesSql = "WITH RECURSIVE reply_tree AS (" +
+                "    SELECT id, parent_tweet_id, user_id, content, created_at, 1 AS depth" +
+                "    FROM tweets" +
+                "    WHERE parent_tweet_id = ?" +
+                "    UNION ALL" +
+                "    SELECT t.id, t.parent_tweet_id, t.user_id, t.content, t.created_at, rt.depth + 1" +
+                "    FROM tweets t" +
+                "    JOIN reply_tree rt ON t.parent_tweet_id = rt.id" +
+                ")" +
+                "SELECT rt.id AS tweet_id, rt.parent_tweet_id, rt.depth, u.username, u.display_name, u.avatar_path, rt.content, rt.created_at, " +
+                "       (SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = rt.id) AS final_media_paths, " +
+                "       (SELECT COUNT(*) FROM likes WHERE tweet_id = rt.id) AS like_count, " +
+                "       (SELECT COUNT(*) FROM likes WHERE tweet_id = rt.id AND user_id = ?) AS is_liked, " +
+                "       (SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = rt.id) AS reply_count " +
+                "FROM reply_tree rt " +
+                "JOIN users u ON rt.user_id = u.id " +
+                "ORDER BY rt.created_at ASC";
 
         try (Connection conn = getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement(mainSql)) {
@@ -329,8 +337,8 @@ public class DatabaseManager
 
             JSONArray replies = new JSONArray();
             try (PreparedStatement ps = conn.prepareStatement(repliesSql)) {
-                ps.setInt(1, loggedInUserId);
-                ps.setInt(2, tweetId);
+                ps.setInt(1, tweetId);
+                ps.setInt(2, loggedInUserId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         JSONObject reply = new JSONObject();
@@ -355,6 +363,8 @@ public class DatabaseManager
                         reply.put("like_count", rs.getInt("like_count"));
                         reply.put("is_liked", rs.getInt("is_liked") > 0);
                         reply.put("reply_count", rs.getInt("reply_count"));
+                        reply.put("parent_tweet_id", rs.getInt("parent_tweet_id"));
+                        reply.put("depth", rs.getInt("depth"));
 
                         replies.put(reply);
                     }
@@ -498,12 +508,14 @@ public class DatabaseManager
         }
     }
 
-    public static JSONArray getUserTweets(String profileUsername, String loggedInUsername) {
+    public static JSONArray getUserTweets(String profileUsername, String loggedInUsername, boolean repliesOnly) {
         JSONArray tweets = new JSONArray();
         int profileUserId = getUserIdByUsername(profileUsername);
         int loggedInUserId = getUserIdByUsername(loggedInUsername);
 
         if (profileUserId == -1) return tweets;
+
+        String parentTweetCondition = repliesOnly ? "AND t.parent_tweet_id IS NOT NULL " : "AND t.parent_tweet_id IS NULL ";
 
         String sql = "SELECT t.id AS tweet_id, t.content, t.created_at, " +
                 "u.display_name, u.username, " +
@@ -513,7 +525,7 @@ public class DatabaseManager
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
-                "WHERE t.user_id = ? " +
+                "WHERE t.user_id = ? " + parentTweetCondition +
                 "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection();
@@ -915,7 +927,7 @@ public class DatabaseManager
 
     public static int getTweetCount(int userId)
     {
-        String sql = "SELECT COUNT(*) FROM tweets WHERE user_id = ?";
+        String sql = "SELECT COUNT(*) FROM tweets WHERE user_id = ? AND parent_tweet_id IS NULL";
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
@@ -933,5 +945,142 @@ public class DatabaseManager
             System.err.println("Error getting tweet count: " + e.getMessage());
         }
         return 0;
+    }
+
+    public static JSONArray getTrendingHashtags(int limit) {
+        JSONArray list = new JSONArray();
+        String sql = "SELECT h.tag, COUNT(th.tweet_id) AS count " +
+                     "FROM hashtags h " +
+                     "JOIN tweet_hashtags th ON h.id = th.hashtag_id " +
+                     "GROUP BY h.id, h.tag " +
+                     "ORDER BY count DESC " +
+                     "LIMIT ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, limit);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject item = new JSONObject();
+                    item.put("tag", rs.getString("tag"));
+                    item.put("count", rs.getInt("count"));
+                    list.put(item);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching trending hashtags: " + e.getMessage());
+        }
+        return list;
+    }
+    public static JSONArray getUserLikedTweets(String profileUsername, String loggedInUsername) {
+        JSONArray tweets = new JSONArray();
+        int loggedInUserId = getUserIdByUsername(loggedInUsername);
+        if (loggedInUserId == -1) return tweets;
+
+        String sql = "SELECT t.id AS tweet_id, t.content, t.created_at, " +
+                     "u.display_name, u.username, " +
+                     "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
+                     "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                     "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                     "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
+                     "FROM tweets t " +
+                     "JOIN users u ON t.user_id = u.id " +
+                     "JOIN likes l ON t.id = l.tweet_id " +
+                     "JOIN users liked_by ON l.user_id = liked_by.id " +
+                     "WHERE liked_by.username = ? " +
+                     "ORDER BY l.created_at DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, loggedInUserId);
+            pstmt.setString(2, profileUsername);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject tweet = new JSONObject();
+                    tweet.put("tweet_id", rs.getInt("tweet_id"));
+                    tweet.put("content", rs.getString("content"));
+
+                    String mediaPathsStr = rs.getString("final_media_paths");
+                    JSONArray mediaArray = new JSONArray();
+                    if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                        for (String p : mediaPathsStr.split(",")) {
+                            mediaArray.put(p.trim());
+                        }
+                    }
+                    tweet.put("image_paths", mediaArray);
+
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
+
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                    tweet.put("reply_count", rs.getInt("reply_count"));
+                    tweet.put("display_name", rs.getString("display_name"));
+                    tweet.put("username", rs.getString("username"));
+                    tweets.put(tweet);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving user liked tweets: " + e.getMessage());
+        }
+        return tweets;
+    }
+
+    public static JSONArray getUserMediaTweets(String profileUsername, String loggedInUsername) {
+        JSONArray tweets = new JSONArray();
+        int profileUserId = getUserIdByUsername(profileUsername);
+        int loggedInUserId = getUserIdByUsername(loggedInUsername);
+
+        if (profileUserId == -1) return tweets;
+
+        String sql = "SELECT DISTINCT t.id AS tweet_id, t.content, t.created_at, " +
+                     "u.display_name, u.username, " +
+                     "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
+                     "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                     "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                     "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
+                     "FROM tweets t " +
+                     "JOIN users u ON t.user_id = u.id " +
+                     "JOIN tweet_media tm ON t.id = tm.tweet_id " +
+                     "WHERE t.user_id = ? " +
+                     "ORDER BY t.created_at DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, loggedInUserId);
+            pstmt.setInt(2, profileUserId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject tweet = new JSONObject();
+                    tweet.put("tweet_id", rs.getInt("tweet_id"));
+                    tweet.put("content", rs.getString("content"));
+
+                    String mediaPathsStr = rs.getString("final_media_paths");
+                    JSONArray mediaArray = new JSONArray();
+                    if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                        for (String p : mediaPathsStr.split(",")) {
+                            mediaArray.put(p.trim());
+                        }
+                    }
+                    tweet.put("image_paths", mediaArray);
+
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
+
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                    tweet.put("reply_count", rs.getInt("reply_count"));
+                    tweet.put("display_name", rs.getString("display_name"));
+                    tweet.put("username", rs.getString("username"));
+                    tweets.put(tweet);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving user media tweets: " + e.getMessage());
+        }
+        return tweets;
     }
 }

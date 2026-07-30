@@ -322,7 +322,12 @@ public class EditProfileController {
     }
 
     private Image resolveImage(String path) {
-        if (path == null || path.trim().isEmpty() || path.equalsIgnoreCase("null")) return null;
+        if (path == null || path.trim().isEmpty() || path.equalsIgnoreCase("null")
+            || path.equalsIgnoreCase("default.png")
+            || path.equalsIgnoreCase("default-avatar.png")
+            || path.equalsIgnoreCase("default-banner.png")) {
+            return null;
+        }
 
         try {
             File file = new File(path);

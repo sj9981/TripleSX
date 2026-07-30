@@ -37,8 +37,17 @@ public class ProfileController
     @FXML private ImageView bannerImageView;
     @FXML private Button followButton;
     @FXML private Label postsLabel;
+    @FXML private Label postsTab;
+    @FXML private Label repliesTab;
+    @FXML private Label mediaTab;
+    @FXML private Label likesTab;
+
     private String currentUsername;
     private boolean isFollowingCurrent;
+    private JSONArray loadedTweets = new JSONArray();
+    private JSONArray loadedReplies = new JSONArray();
+    private JSONArray loadedMedia = new JSONArray();
+    private JSONArray loadedLikes = new JSONArray();
 
     @FXML
     public void initialize()
@@ -117,12 +126,16 @@ public class ProfileController
             }
 
             JSONArray tweets = response.optJSONArray("tweets");
-            userTweetsContainer.getChildren().clear();
-            if (tweets != null) {
-                for (int i = 0; i < tweets.length(); i++) {
-                    addTweetToUI(tweets.getJSONObject(i));
-                }
-            }
+            JSONArray replies = response.optJSONArray("replies");
+            JSONArray media = response.optJSONArray("media");
+            JSONArray likes = response.optJSONArray("likes");
+
+            this.loadedTweets = tweets != null ? tweets : new JSONArray();
+            this.loadedReplies = replies != null ? replies : new JSONArray();
+            this.loadedMedia = media != null ? media : new JSONArray();
+            this.loadedLikes = likes != null ? likes : new JSONArray();
+
+            showPostsSection();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -190,66 +203,69 @@ public class ProfileController
     }
 
     private Image resolveImage(String path, String defaultResource)
+{
+    if (path == null || path.trim().isEmpty() || "null".equalsIgnoreCase(path)
+        || "default.png".equalsIgnoreCase(path)
+        || "default-avatar.png".equalsIgnoreCase(path)
+        || "default-banner.png".equalsIgnoreCase(path))
     {
-        if (path == null || path.trim().isEmpty() || "null".equalsIgnoreCase(path))
-        {
-            return loadResourceImage(defaultResource);
-        }
-
-        try
-        {
-            File file = new File(path);
-            if (file.exists())
-            {
-                Image image = new Image(file.toURI().toString(), false);
-                if (!image.isError())
-                {
-                    return image;
-                }
-            }
-        }
-        catch (Exception ignored)
-        {
-        }
-
-        try
-        {
-            String resourcePath = path.startsWith("/") ? path : "/" + path;
-            InputStream stream = getClass().getResourceAsStream(resourcePath);
-
-            if (stream != null)
-            {
-                Image image = new Image(stream);
-                if (!image.isError())
-                {
-                    return image;
-                }
-            }
-        }
-        catch (Exception ignored)
-        {
-        }
-
-        try
-        {
-            String fileNameOnly = new File(path).getName();
-            InputStream stream = getClass().getResourceAsStream("/" + fileNameOnly);
-
-            if (stream != null)
-            {
-                Image image = new Image(stream);
-                if (!image.isError())
-                {
-                    return image;
-                }
-            }
-        }
-        catch (Exception ignored)
-        {
-        }
-
         return loadResourceImage(defaultResource);
     }
+
+    try
+    {
+        File file = new File(path);
+        if (file.exists())
+        {
+            Image image = new Image(file.toURI().toString(), false);
+            if (!image.isError())
+            {
+                return image;
+            }
+        }
+    }
+    catch (Exception ignored)
+    {
+    }
+
+    try
+    {
+        String resourcePath = path.startsWith("/") ? path : "/" + path;
+        InputStream stream = getClass().getResourceAsStream(resourcePath);
+
+        if (stream != null)
+        {
+            Image image = new Image(stream);
+            if (!image.isError())
+            {
+                return image;
+            }
+        }
+    }
+    catch (Exception ignored)
+    {
+    }
+
+    try
+    {
+        String fileNameOnly = new File(path).getName();
+        InputStream stream = getClass().getResourceAsStream("/" + fileNameOnly);
+
+        if (stream != null)
+        {
+            Image image = new Image(stream);
+            if (!image.isError())
+            {
+                return image;
+            }
+        }
+    }
+    catch (Exception ignored)
+    {
+    }
+
+    return loadResourceImage(defaultResource);
+}
 
     private Image loadResourceImage(String resourcePath)
     {
@@ -343,6 +359,14 @@ public class ProfileController
                             ImageView imageView = new ImageView(new Image(file.toURI().toString()));
                             imageView.setFitWidth(imagePaths.length() == 1 ? 400 : 200);
                             imageView.setPreserveRatio(true);
+
+                            imageView.setStyle("-fx-cursor: hand;");
+                            final String currentPath = path;
+                            imageView.setOnMouseClicked(event -> {
+                                event.consume();
+                                ImageViewerUtils.openFullSizeImage(tweetBox.getScene(), currentPath);
+                            });
+
                             imagesLayout.getChildren().add(imageView);
                         }
                     } catch (Exception ignored) {}
@@ -454,8 +478,12 @@ public class ProfileController
             if (res.optBoolean("success")) {
                 userTweetsContainer.getChildren().remove(tweetBox);
                 //Update tweet count
-                int currentCount = Integer.parseInt(tweetCountLabel.getText());
-                tweetCountLabel.setText(String.valueOf(Math.max(0, currentCount - 1)));
+
+                if (postsTab.getStyle().contains("white"))
+                {
+                    int currentCount = Integer.parseInt(tweetCountLabel.getText());
+                    tweetCountLabel.setText(String.valueOf(Math.max(0, currentCount - 1)));
+                }
             }
             modal.close();
         });
@@ -600,6 +628,54 @@ public class ProfileController
                             "-fx-font-weight: normal; " +
                             "-fx-font-size: 14px;"
             );
+        }
+    }
+    @FXML
+    private void showPostsSection() {
+        highlightTab(postsTab);
+        renderTweetsList(loadedTweets);
+    }
+
+    @FXML
+    private void showRepliesSection() {
+        highlightTab(repliesTab);
+        renderTweetsList(loadedReplies);
+    }
+
+    private void renderTweetsList(JSONArray list) {
+        userTweetsContainer.getChildren().clear();
+        for (int i = 0; i < list.length(); i++) {
+            addTweetToUI(list.getJSONObject(i));
+        }
+    }
+
+    @FXML
+    private void showMediaSection() {
+        highlightTab(mediaTab);
+        renderTweetsList(loadedMedia);
+    }
+
+    @FXML
+    private void showLikesSection() {
+        highlightTab(likesTab);
+        renderTweetsList(loadedLikes);
+    }
+
+    private void highlightTab(Label selectedTab) {
+        if (postsTab != null) {
+            postsTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (repliesTab != null) {
+            repliesTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (mediaTab != null) {
+            mediaTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (likesTab != null) {
+            likesTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (selectedTab != null) {
+            selectedTab.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 4 0; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
         }
     }
 }

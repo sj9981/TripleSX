@@ -83,24 +83,20 @@ public class RequestProcessor {
                     response.put("success", rtSuccess);
 
                     if (rtSuccess) {
-                        // Fetch details of the original content to broadcast the retweet UI
                         JSONObject details = DatabaseManager.getTweetDetails(originalId, rtUser);
                         if (details.optBoolean("success")) {
                             JSONObject originalData = details.getJSONObject("tweet");
                             DatabaseManager.UserProfile rtUserProfile = DatabaseManager.getUserProfile(rtUser);
 
-                            // Create the Push Notification
                             JSONObject push = new JSONObject(originalData.toString());
                             push.put("type", "NEW_TWEET");
-                            push.put("tweet_id", newRetweetRecordId); // The ID of the NEW retweet record
+                            push.put("tweet_id", newRetweetRecordId);
                             push.put("original_tweet_id", originalId);
                             push.put("is_retweet", true);
                             push.put("retweeted_by", rtUserProfile.getDisplayName());
 
-                            // Send to the person who just retweeted
                             ConnectionManager.sendToClient(rtUser, push.toString());
 
-                            // Send to all their followers
                             List<String> followers = DatabaseManager.getFollowers(rtUser);
                             for (String f : followers) {
                                 ConnectionManager.sendToClient(f, push.toString());
@@ -127,6 +123,11 @@ public class RequestProcessor {
                             ConnectionManager.sendToClient(f, deletePush.toString());
                         }
                     }
+                    break;
+                case "get_trending_hashtags":
+                    int limit = request.optInt("limit", 5);
+                    response.put("success", true);
+                    response.put("trends", DatabaseManager.getTrendingHashtags(limit));
                     break;
                 default:
                     response.put("success", false);
@@ -359,7 +360,10 @@ public class RequestProcessor {
             userProfileJson.put("tweetCount", tweetCount);
 
             res.put("user", userProfileJson);
-            res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser));
+            res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser, false));
+            res.put("replies", DatabaseManager.getUserTweets(username, loggedInUser, true));
+            res.put("media", DatabaseManager.getUserMediaTweets(username, loggedInUser));
+            res.put("likes", DatabaseManager.getUserLikedTweets(username, loggedInUser));
 
         } catch (org.json.JSONException e) {
             res.put("success", false);
@@ -388,7 +392,6 @@ public class RequestProcessor {
         return res;
     }
 
-    // متد کامل و آپدیت شده در RequestProcessor.java
     private JSONObject handleUpdateProfile(JSONObject request) {
         JSONObject res = new JSONObject();
         try {

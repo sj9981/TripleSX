@@ -49,6 +49,10 @@
                 <VBox fx:id="mainTweetContainer" style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;"/>
 
                 <VBox spacing="10" style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;">
+                    <HBox fx:id="replyTargetBox" spacing="10" alignment="CENTER_LEFT" visible="false" managed="false" style="-fx-padding: 0 0 5 0;">
+                        <Label fx:id="replyTargetLabel" text="Replying to @username" style="-fx-text-fill: #1d9bf0; -fx-font-size: 13px; -fx-font-weight: bold;" />
+                        <Button text="✕" onAction="#handleCancelReplyTarget" style="-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand; -fx-font-size: 12px; -fx-font-weight: bold;" />
+                    </HBox>
                     <TextArea fx:id="replyTextArea"
                               prefHeight="60"
                               promptText="Post your reply"
@@ -71,10 +75,9 @@
             <Insets top="20" left="20" right="20" bottom="20"/>
         </padding>
 
-        <VBox spacing="10" styleClass="trends-panel">
-            <Label text="What's happening" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: 800;"/>
-            <Hyperlink text="#JavaFX" onAction="#handleTrendClick" style="-fx-text-fill: #1d9bf0; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;"/>
-            <Hyperlink text="#TripleSX" onAction="#handleTrendClick" style="-fx-text-fill: #1d9bf0; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;"/>
+        <VBox spacing="15" styleClass="trends-panel">
+            <Label style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: 800;" text="What's happening" />
+            <VBox fx:id="trendsContainer" spacing="15" />
         </VBox>
     </VBox>
 
