@@ -337,8 +337,8 @@ public class DatabaseManager
 
             JSONArray replies = new JSONArray();
             try (PreparedStatement ps = conn.prepareStatement(repliesSql)) {
-                ps.setInt(1, loggedInUserId);
-                ps.setInt(2, tweetId);
+                ps.setInt(1, tweetId);
+                ps.setInt(2, loggedInUserId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         JSONObject reply = new JSONObject();
