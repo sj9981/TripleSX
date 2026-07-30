@@ -39,11 +39,15 @@ public class ProfileController
     @FXML private Label postsLabel;
     @FXML private Label postsTab;
     @FXML private Label repliesTab;
+    @FXML private Label mediaTab;
+    @FXML private Label likesTab;
 
     private String currentUsername;
     private boolean isFollowingCurrent;
     private JSONArray loadedTweets = new JSONArray();
     private JSONArray loadedReplies = new JSONArray();
+    private JSONArray loadedMedia = new JSONArray();
+    private JSONArray loadedLikes = new JSONArray();
 
     @FXML
     public void initialize()
@@ -123,11 +127,14 @@ public class ProfileController
 
             JSONArray tweets = response.optJSONArray("tweets");
             JSONArray replies = response.optJSONArray("replies");
+            JSONArray media = response.optJSONArray("media");
+            JSONArray likes = response.optJSONArray("likes");
 
             this.loadedTweets = tweets != null ? tweets : new JSONArray();
             this.loadedReplies = replies != null ? replies : new JSONArray();
+            this.loadedMedia = media != null ? media : new JSONArray();
+            this.loadedLikes = likes != null ? likes : new JSONArray();
 
-            // Default view selection
             showPostsSection();
         } catch (Exception e) {
             e.printStackTrace();
@@ -642,12 +649,30 @@ public class ProfileController
         }
     }
 
+    @FXML
+    private void showMediaSection() {
+        highlightTab(mediaTab);
+        renderTweetsList(loadedMedia);
+    }
+
+    @FXML
+    private void showLikesSection() {
+        highlightTab(likesTab);
+        renderTweetsList(loadedLikes);
+    }
+
     private void highlightTab(Label selectedTab) {
         if (postsTab != null) {
             postsTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
         }
         if (repliesTab != null) {
             repliesTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (mediaTab != null) {
+            mediaTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (likesTab != null) {
+            likesTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
         }
         if (selectedTab != null) {
             selectedTab.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 4 0; -fx-padding: 0 0 10 0; -fx-cursor: hand;");

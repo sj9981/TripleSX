@@ -362,6 +362,8 @@ public class RequestProcessor {
             res.put("user", userProfileJson);
             res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser, false));
             res.put("replies", DatabaseManager.getUserTweets(username, loggedInUser, true));
+            res.put("media", DatabaseManager.getUserMediaTweets(username, loggedInUser));
+            res.put("likes", DatabaseManager.getUserLikedTweets(username, loggedInUser));
 
         } catch (org.json.JSONException e) {
             res.put("success", false);
