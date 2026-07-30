@@ -7,8 +7,6 @@
 [![Maven](https://img.shields.io/badge/Maven-Build--Tool-green.svg)](https://maven.apache.org/)
 [![Socket](https://img.shields.io/badge/Communication-TCP%20Sockets-red.svg)]()
 
-**TripleSX** is a high-performance, desktop social media application inspired by X (formerly Twitter). This project was developed as the final assignment for the **Advanced Programming** course at **Shahid Beheshti University (SBU)**. It demonstrates a sophisticated implementation of a multi-threaded client-server architecture, real-time networking, and robust relational data management.
-
 ---
 
 ## 📋 Table of Contents
@@ -19,6 +17,8 @@
 - [📂 Project Structure](#-project-structure)
 - [🚀 Setup & Installation](#-setup--installation)
 - [📖 Usage Guide](#-usage-guide)
+- [💻 Code Examples](#-code-examples)
+- [📖 Usage Guide](#-usage-guide)
 - [📊 Database Design](#-database-design)
 - [📝 Changelog](#-changelog)
 - [👥 Contributors](#-contributors)
@@ -27,6 +27,31 @@
 
 ## 🌟 Project Overview
 TripleSX aims to replicate the dynamic ecosystem of a modern social network. The platform enables users to share media-rich content, interact through a complex social graph, and receive updates in real-time. The core focus was to handle concurrency on the server side and provide a seamless, responsive UI on the client side.
+
+---
+
+## 📸 Visual Demo & Screenshots
+*Here is a preview of the TripleSX interface in action:*
+
+| **Login Screen** | **Registration** |
+|:---:|:---:|
+| ![Login](screenshots/login.png) | ![Register](screenshots/register.png) |
+| *Secure entry with jBCrypt hashing* | *New user onboarding* |
+
+| **Home Feed (Real-time)** | **User Profile** |
+|:---:|:---:|
+| ![Home](screenshots/home.png) | ![Profile](screenshots/profile.png) |
+| *Dynamic timeline with push notifications* | *Stats, posts, and media display* |
+
+| **Search & Explore** | **Edit Profile** |
+|:---:|:---:|
+| ![Search](screenshots/search.png) | ![Edit Profile](screenshots/edit_profile.png) |
+| *Global search for users and hashtags* | *Customizing avatars and banners* |
+
+| **Media Upload & Preview** |
+|:---:|
+| ![Upload](screenshots/upload.png) |
+| *Preview and manage attachments before posting* |
 
 ---
 
@@ -118,6 +143,38 @@ private static final String PASSWORD = "your_secure_password";
 ### 3. Running the Application
 - Start the Server: Run MainServer.java. It will start listening on port 5000.
 - Start the Client: Run Launcher.java. You can open multiple instances to test real-time features.
+---
+## 📖 Usage Guide
+- 1.**Authentication:** Start by creating an account in the "Sign Up" screen.
+- 2.**Posting:** Use the text area in the Home feed to write a post. Click the 📸 icon to attach images.
+- 3.**Interacting:** Click on any tweet to view its details, including likes and the reply tree.
+- 4.**Profile:** Navigate to your profile via the sidebar to update your Bio, Avatar, or Banner.
+- 5.**Explore:** Use the search bar to find users by handle or search for specific hashtags like `#TripleSX`.
+---
+## 💻 Code Examples
+#### JSON Protocol Example (Like a Tweet)
+```bash
+{
+"action": "like_tweet",
+"username": "saba_frm",
+"tweet_id": 142,
+"requestId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+#### Client-Side Real-time Listener (Snippet)
+
+```bash
+// Inside NetworkManager.java
+if (message.has("type")) {
+    String type = message.optString("type", "");
+    if ("NEW_TWEET".equals(type)) {
+        Platform.runLater(() -> {
+            HomeController.getInstance().addTweetToFeed(message, true);
+        });
+    }
+}
+```
+
 ---
 ## 📊 Database Design
 - The relational schema ensures data integrity and fast retrieval:
