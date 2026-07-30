@@ -71,10 +71,9 @@
             <Insets top="20" left="20" right="20" bottom="20"/>
         </padding>
 
-        <VBox spacing="10" styleClass="trends-panel">
-            <Label text="What's happening" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: 800;"/>
-            <Hyperlink text="#JavaFX" onAction="#handleTrendClick" style="-fx-text-fill: #1d9bf0; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;"/>
-            <Hyperlink text="#TripleSX" onAction="#handleTrendClick" style="-fx-text-fill: #1d9bf0; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;"/>
+        <VBox spacing="15" styleClass="trends-panel">
+            <Label style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: 800;" text="What's happening" />
+            <VBox fx:id="trendsContainer" spacing="15" />
         </VBox>
     </VBox>
 
