@@ -32,7 +32,12 @@ public class TweetDetailsController {
     @FXML private Button replyButton;
     @FXML private VBox trendsContainer;
 
+    @FXML private HBox replyTargetBox;
+    @FXML private Label replyTargetLabel;
+
     private int currentTweetId;
+    private int activeReplyTargetId;
+    private final java.util.Map<Integer, VBox> replyContainersMap = new java.util.HashMap<>();
 
     @FXML
     public void initialize() {
@@ -65,12 +70,15 @@ public class TweetDetailsController {
 
     public void setTweetId(int tweetId) {
         this.currentTweetId = tweetId;
+        this.activeReplyTargetId = tweetId;
         loadTweetDetails();
     }
 
     private void loadTweetDetails() {
         mainTweetContainer.getChildren().clear();
         repliesContainer.getChildren().clear();
+        replyContainersMap.clear();
+        handleCancelReplyTarget();
 
         JSONObject response = NetworkManager.getInstance().getTweetDetails(currentTweetId);
         if (response != null && response.optBoolean("success", false)) {
@@ -210,27 +218,28 @@ public class TweetDetailsController {
 
     private void renderReplyCard(JSONObject tweetObj) {
         int replyId = tweetObj.optInt("tweet_id");
+        int parentId = tweetObj.optInt("parent_tweet_id", currentTweetId);
+        int depth = tweetObj.optInt("depth", 1);
         String author = tweetObj.optString("username", "Unknown");
         String content = tweetObj.optString("content", "");
         String createdAt = tweetObj.optString("created_at", "");
         String avatarPath = tweetObj.optString("avatar_path", "");
 
         VBox card = new VBox(8);
-        card.setStyle("-fx-padding: 12; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-cursor: hand;");
+        card.setStyle("-fx-padding: 10; -fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-cursor: hand;");
 
         HBox header = new HBox(10);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        header.setStyle("-fx-cursor: hand;");
 
-        Circle avatar = new Circle(16);
+        Circle avatar = new Circle(14);
         Image avatarImg = resolveImage(avatarPath);
         if (avatarImg != null) avatar.setFill(new ImagePattern(avatarImg));
         else avatar.setFill(Color.web("#333333"));
 
         Label nameLabel = new Label(author);
-        nameLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
+        nameLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
         Label handleLabel = new Label("@" + author.toLowerCase());
-        handleLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 13px;");
+        handleLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
         header.setOnMouseClicked(event -> {
@@ -238,15 +247,39 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 14, "#e7e9ea");
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 13, "#e7e9ea");
+
+        HBox footerBox = new HBox(15);
+        footerBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         Label timeLabel = new Label(createdAt);
-        timeLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
+        timeLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 11px;");
 
-        card.getChildren().addAll(header, contentFlow, timeLabel);
-        card.setOnMouseClicked(e -> setTweetId(replyId));
+        Button replyContextBtn = new Button("💬 Reply");
+        replyContextBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1d9bf0; -fx-cursor: hand; -fx-font-size: 11px; -fx-padding: 0;");
+        replyContextBtn.setOnAction(e -> {
+            e.consume();
+            setReplyTarget(replyId, author);
+        });
 
-        repliesContainer.getChildren().add(card);
+        footerBox.getChildren().addAll(timeLabel, replyContextBtn);
+
+        VBox subRepliesContainer = new VBox(8);
+        subRepliesContainer.setStyle("-fx-padding: 5 0 0 15; -fx-border-color: #2f3336; -fx-border-width: 0 0 0 1;");
+
+        card.getChildren().addAll(header, contentFlow, footerBox, subRepliesContainer);
+        card.setOnMouseClicked(e -> {
+            if (e.getTarget() instanceof Button) return;
+            setTweetId(replyId);
+        });
+
+        replyContainersMap.put(replyId, subRepliesContainer);
+
+        if (parentId == currentTweetId || !replyContainersMap.containsKey(parentId)) {
+            repliesContainer.getChildren().add(card);
+        } else {
+            replyContainersMap.get(parentId).getChildren().add(card);
+        }
     }
 
     private void navigateToProfile(String targetUsername) {
@@ -278,11 +311,29 @@ public class TweetDetailsController {
 
         String currentUser = SessionManager.getInstance().getUsername();
 
-        JSONObject response = NetworkManager.getInstance().createTweet(currentUser, replyText, new java.util.ArrayList<>(), currentTweetId);
+        JSONObject response = NetworkManager.getInstance().createTweet(currentUser, replyText, new java.util.ArrayList<>(), activeReplyTargetId);
 
         if (response != null && response.optBoolean("success", false)) {
             replyTextArea.clear();
             loadTweetDetails();
+        }
+    }
+
+    private void setReplyTarget(int targetId, String author) {
+        this.activeReplyTargetId = targetId;
+        if (replyTargetBox != null && replyTargetLabel != null) {
+            replyTargetLabel.setText("Replying to @" + author);
+            replyTargetBox.setVisible(true);
+            replyTargetBox.setManaged(true);
+        }
+    }
+
+    @FXML
+    private void handleCancelReplyTarget() {
+        this.activeReplyTargetId = currentTweetId;
+        if (replyTargetBox != null) {
+            replyTargetBox.setVisible(false);
+            replyTargetBox.setManaged(false);
         }
     }
 

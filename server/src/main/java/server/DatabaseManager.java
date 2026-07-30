@@ -275,15 +275,23 @@ public class DatabaseManager
                 "JOIN users u ON t.user_id = u.id " +
                 "WHERE t.id = ?";
 
-        String repliesSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, " +
-                "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
-                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
-                "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
-                "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
-                "FROM tweets t " +
-                "JOIN users u ON t.user_id = u.id " +
-                "WHERE t.parent_tweet_id = ? " +
-                "ORDER BY t.created_at ASC";
+        String repliesSql = "WITH RECURSIVE reply_tree AS (" +
+                "    SELECT id, parent_tweet_id, user_id, content, created_at, 1 AS depth" +
+                "    FROM tweets" +
+                "    WHERE parent_tweet_id = ?" +
+                "    UNION ALL" +
+                "    SELECT t.id, t.parent_tweet_id, t.user_id, t.content, t.created_at, rt.depth + 1" +
+                "    FROM tweets t" +
+                "    JOIN reply_tree rt ON t.parent_tweet_id = rt.id" +
+                ")" +
+                "SELECT rt.id AS tweet_id, rt.parent_tweet_id, rt.depth, u.username, u.display_name, u.avatar_path, rt.content, rt.created_at, " +
+                "       (SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = rt.id) AS final_media_paths, " +
+                "       (SELECT COUNT(*) FROM likes WHERE tweet_id = rt.id) AS like_count, " +
+                "       (SELECT COUNT(*) FROM likes WHERE tweet_id = rt.id AND user_id = ?) AS is_liked, " +
+                "       (SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = rt.id) AS reply_count " +
+                "FROM reply_tree rt " +
+                "JOIN users u ON rt.user_id = u.id " +
+                "ORDER BY rt.created_at ASC";
 
         try (Connection conn = getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement(mainSql)) {
@@ -355,6 +363,8 @@ public class DatabaseManager
                         reply.put("like_count", rs.getInt("like_count"));
                         reply.put("is_liked", rs.getInt("is_liked") > 0);
                         reply.put("reply_count", rs.getInt("reply_count"));
+                        reply.put("parent_tweet_id", rs.getInt("parent_tweet_id"));
+                        reply.put("depth", rs.getInt("depth"));
 
                         replies.put(reply);
                     }

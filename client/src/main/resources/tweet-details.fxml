@@ -49,6 +49,10 @@
                 <VBox fx:id="mainTweetContainer" style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;"/>
 
                 <VBox spacing="10" style="-fx-border-color: #2f3336; -fx-border-width: 0 0 1 0; -fx-padding: 15;">
+                    <HBox fx:id="replyTargetBox" spacing="10" alignment="CENTER_LEFT" visible="false" managed="false" style="-fx-padding: 0 0 5 0;">
+                        <Label fx:id="replyTargetLabel" text="Replying to @username" style="-fx-text-fill: #1d9bf0; -fx-font-size: 13px; -fx-font-weight: bold;" />
+                        <Button text="✕" onAction="#handleCancelReplyTarget" style="-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-padding: 0; -fx-cursor: hand; -fx-font-size: 12px; -fx-font-weight: bold;" />
+                    </HBox>
                     <TextArea fx:id="replyTextArea"
                               prefHeight="60"
                               promptText="Post your reply"
