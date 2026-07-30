@@ -934,4 +934,29 @@ public class DatabaseManager
         }
         return 0;
     }
+
+    public static JSONArray getTrendingHashtags(int limit) {
+        JSONArray list = new JSONArray();
+        String sql = "SELECT h.tag, COUNT(th.tweet_id) AS count " +
+                     "FROM hashtags h " +
+                     "JOIN tweet_hashtags th ON h.id = th.hashtag_id " +
+                     "GROUP BY h.id, h.tag " +
+                     "ORDER BY count DESC " +
+                     "LIMIT ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, limit);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject item = new JSONObject();
+                    item.put("tag", rs.getString("tag"));
+                    item.put("count", rs.getInt("count"));
+                    list.put(item);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching trending hashtags: " + e.getMessage());
+        }
+        return list;
+    }
 }
