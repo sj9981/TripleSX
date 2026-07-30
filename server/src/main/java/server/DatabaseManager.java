@@ -508,12 +508,14 @@ public class DatabaseManager
         }
     }
 
-    public static JSONArray getUserTweets(String profileUsername, String loggedInUsername) {
+    public static JSONArray getUserTweets(String profileUsername, String loggedInUsername, boolean repliesOnly) {
         JSONArray tweets = new JSONArray();
         int profileUserId = getUserIdByUsername(profileUsername);
         int loggedInUserId = getUserIdByUsername(loggedInUsername);
 
         if (profileUserId == -1) return tweets;
+
+        String parentTweetCondition = repliesOnly ? "AND t.parent_tweet_id IS NOT NULL " : "AND t.parent_tweet_id IS NULL ";
 
         String sql = "SELECT t.id AS tweet_id, t.content, t.created_at, " +
                 "u.display_name, u.username, " +
@@ -523,7 +525,7 @@ public class DatabaseManager
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
-                "WHERE t.user_id = ? " +
+                "WHERE t.user_id = ? " + parentTweetCondition +
                 "ORDER BY t.created_at DESC";
 
         try (Connection conn = getConnection();

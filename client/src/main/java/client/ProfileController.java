@@ -37,8 +37,13 @@ public class ProfileController
     @FXML private ImageView bannerImageView;
     @FXML private Button followButton;
     @FXML private Label postsLabel;
+    @FXML private Label postsTab;
+    @FXML private Label repliesTab;
+
     private String currentUsername;
     private boolean isFollowingCurrent;
+    private JSONArray loadedTweets = new JSONArray();
+    private JSONArray loadedReplies = new JSONArray();
 
     @FXML
     public void initialize()
@@ -117,12 +122,13 @@ public class ProfileController
             }
 
             JSONArray tweets = response.optJSONArray("tweets");
-            userTweetsContainer.getChildren().clear();
-            if (tweets != null) {
-                for (int i = 0; i < tweets.length(); i++) {
-                    addTweetToUI(tweets.getJSONObject(i));
-                }
-            }
+            JSONArray replies = response.optJSONArray("replies");
+
+            this.loadedTweets = tweets != null ? tweets : new JSONArray();
+            this.loadedReplies = replies != null ? replies : new JSONArray();
+
+            // Default view selection
+            showPostsSection();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -603,6 +609,36 @@ public class ProfileController
                             "-fx-font-weight: normal; " +
                             "-fx-font-size: 14px;"
             );
+        }
+    }
+    @FXML
+    private void showPostsSection() {
+        highlightTab(postsTab);
+        renderTweetsList(loadedTweets);
+    }
+
+    @FXML
+    private void showRepliesSection() {
+        highlightTab(repliesTab);
+        renderTweetsList(loadedReplies);
+    }
+
+    private void renderTweetsList(JSONArray list) {
+        userTweetsContainer.getChildren().clear();
+        for (int i = 0; i < list.length(); i++) {
+            addTweetToUI(list.getJSONObject(i));
+        }
+    }
+
+    private void highlightTab(Label selectedTab) {
+        if (postsTab != null) {
+            postsTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (repliesTab != null) {
+            repliesTab.setStyle("-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
+        }
+        if (selectedTab != null) {
+            selectedTab.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 4 0; -fx-padding: 0 0 10 0; -fx-cursor: hand;");
         }
     }
 }

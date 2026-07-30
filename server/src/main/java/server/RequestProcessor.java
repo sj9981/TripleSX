@@ -360,7 +360,8 @@ public class RequestProcessor {
             userProfileJson.put("tweetCount", tweetCount);
 
             res.put("user", userProfileJson);
-            res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser));
+            res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser, false));
+            res.put("replies", DatabaseManager.getUserTweets(username, loggedInUser, true));
 
         } catch (org.json.JSONException e) {
             res.put("success", false);
