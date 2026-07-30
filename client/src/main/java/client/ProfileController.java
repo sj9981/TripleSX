@@ -279,35 +279,57 @@ public class ProfileController
     private void addTweetToUI(JSONObject tweetJson) {
         int tweetId = tweetJson.optInt("tweet_id");
         String content = tweetJson.optString("content", "");
-        String imagePath = tweetJson.optString("imagePath", "");
         int likeCount = tweetJson.optInt("like_count", 0);
         boolean isLiked = tweetJson.optBoolean("is_liked", false);
         int rtCount = tweetJson.optInt("retweet_count", 0);
         boolean isRetweeted = tweetJson.optBoolean("is_retweeted", false);
+        int replyCount = tweetJson.optInt("reply_count", 0);
 
-        VBox tweetBox = new VBox(10);
+        VBox tweetBox = new VBox(8);
         tweetBox.getStyleClass().add("tweet-card");
         tweetBox.setStyle("-fx-cursor: hand;");
 
-        HBox topRow = new HBox();
-        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 15, "#e7e9ea");
+        // Header (Avatar + Names + Delete)
+        HBox header = new HBox(10);
+        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
-        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
-        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        topRow.getChildren().addAll(contentFlow, spacer);
+        Circle miniAvatar = new Circle(18);
+        if (avatarImageView.getImage() != null) {
+            miniAvatar.setFill(new javafx.scene.paint.ImagePattern(avatarImageView.getImage()));
+        } else {
+            miniAvatar.setFill(javafx.scene.paint.Color.web("#333333"));
+        }
 
+        Label nameLabel = new Label(displayNameLabel.getText());
+        nameLabel.getStyleClass().add("username-label");
+
+        Label handleLabel = new Label(usernameLabel.getText());
+        handleLabel.getStyleClass().add("handle-label");
+
+        header.getChildren().addAll(miniAvatar, nameLabel, handleLabel);
+
+        // Delete Button Logic
         String loggedInUser = SessionManager.getInstance().getUsername();
         if (loggedInUser != null && loggedInUser.equalsIgnoreCase(currentUsername)) {
+            javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+            HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
             Button delBtn = new Button("🗑");
             delBtn.getStyleClass().add("delete-button");
             delBtn.setOnAction(e -> {
-                JSONObject res = NetworkManager.getInstance().deleteTweet(tweetId);
-                if (res.optBoolean("success")) userTweetsContainer.getChildren().remove(tweetBox);
+                e.consume();
+                confirmAndDelete(tweetId, tweetBox);
             });
-            topRow.getChildren().add(delBtn);
-        }
-        tweetBox.getChildren().add(topRow);
 
+            header.getChildren().addAll(spacer, delBtn);
+        }
+
+        // Tweet Content
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 15, "#e7e9ea");
+
+        tweetBox.getChildren().addAll(header, contentFlow);
+
+        // Images Handling
         JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
         if (imagePaths != null && imagePaths.length() > 0) {
             HBox imagesLayout = new HBox(8);
@@ -319,11 +341,7 @@ public class ProfileController
                         File file = new File(path);
                         if (file.exists()) {
                             ImageView imageView = new ImageView(new Image(file.toURI().toString()));
-                            if (imagePaths.length() == 1) {
-                                imageView.setFitWidth(350);
-                            } else {
-                                imageView.setFitWidth(170);
-                            }
+                            imageView.setFitWidth(imagePaths.length() == 1 ? 400 : 200);
                             imageView.setPreserveRatio(true);
                             imagesLayout.getChildren().add(imageView);
                         }
@@ -333,59 +351,133 @@ public class ProfileController
             tweetBox.getChildren().add(imagesLayout);
         }
 
+        // Action Buttons Bar
         Button likeBtn = new Button();
         final int[] pLikes = {likeCount};
         final boolean[] pIsLiked = {isLiked};
-        setupLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
-
+        updateLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
         likeBtn.setOnAction(e -> {
+            e.consume();
             if (pIsLiked[0]) {
                 if (NetworkManager.getInstance().unlikeTweet(tweetId).optBoolean("success")) {
-                    pIsLiked[0] = false;
-                    pLikes[0]--;
-                    setupLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
+                    pIsLiked[0] = false; pLikes[0]--;
+                    updateLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
                 }
             } else {
                 if (NetworkManager.getInstance().likeTweet(tweetId).optBoolean("success")) {
-                    pIsLiked[0] = true;
-                    pLikes[0]++;
-                    setupLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
+                    pIsLiked[0] = true; pLikes[0]++;
+                    updateLikeButtonStyle(likeBtn, pIsLiked[0], pLikes[0]);
                 }
             }
         });
-
-        tweetBox.getChildren().add(likeBtn);
 
         Button rtBtn = new Button();
         final int[] pRts = {rtCount};
         final boolean[] pIsRted = {isRetweeted};
         updateRtButtonStyle(rtBtn, pIsRted[0], pRts[0]);
-
         rtBtn.setOnAction(e -> {
+            e.consume();
             if (pIsRted[0]) {
                 if (NetworkManager.getInstance().unretweet(tweetId).optBoolean("success")) {
-                    pIsRted[0] = false;
-                    pRts[0]--;
+                    pIsRted[0] = false; pRts[0]--;
                     updateRtButtonStyle(rtBtn, pIsRted[0], pRts[0]);
                 }
             } else {
                 if (NetworkManager.getInstance().retweet(tweetId).optBoolean("success")) {
-                    pIsRted[0] = true;
-                    pRts[0]++;
+                    pIsRted[0] = true; pRts[0]++;
                     updateRtButtonStyle(rtBtn, pIsRted[0], pRts[0]);
                 }
             }
         });
 
-        HBox actions = new HBox(15, likeBtn, rtBtn);
-        tweetBox.getChildren().add(actions);
+        Button replyBtn = new Button("💬 " + replyCount);
+        replyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand;");
+        replyBtn.setOnAction(e -> { e.consume(); openTweetDetails(tweetId); });
 
+        HBox actionsBar = new HBox(20, likeBtn, replyBtn, rtBtn);
+        actionsBar.setPadding(new javafx.geometry.Insets(5, 0, 5, 0));
+        tweetBox.getChildren().add(actionsBar);
+
+        // Timestamp (Identical to Home)
+        Label timeLabel = new Label(tweetJson.optString("created_at", ""));
+        timeLabel.getStyleClass().add("time-label");
+        tweetBox.getChildren().add(timeLabel);
+
+        // Card Click Action
         tweetBox.setOnMouseClicked(event -> {
             if (event.getTarget() instanceof Button) return;
             openTweetDetails(tweetId);
         });
 
         userTweetsContainer.getChildren().add(tweetBox);
+    }
+
+    private void updateLikeButtonStyle(Button btn, boolean isLiked, int count) {
+        if (isLiked) {
+            btn.setText("❤ " + count);
+            btn.setStyle("-fx-background-color: transparent; " +
+                    "-fx-text-fill: #f4212e; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-font-size: 14px; " +
+                    "-fx-font-weight: bold;");
+        } else {
+            btn.setText("♡ " + count);
+            btn.setStyle("-fx-background-color: transparent; " +
+                    "-fx-text-fill: #71767b; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-font-size: 14px; " +
+                    "-fx-font-weight: normal;");
+        }
+    }
+
+    private void confirmAndDelete(int tweetId, VBox tweetBox) {
+        javafx.stage.Stage modal = new javafx.stage.Stage();
+        modal.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+        modal.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+
+        VBox container = new VBox(20);
+        container.getStyleClass().add("delete-modal-pane");
+        container.setPrefWidth(320);
+
+        Label title = new Label("Delete post?");
+        title.getStyleClass().add("delete-modal-title");
+
+        Label body = new Label("This can’t be undone and it will be removed from your profile, the timeline of any accounts that follow you, and from search results.");
+        body.getStyleClass().add("delete-modal-body");
+        body.setWrapText(true);
+
+        Button deleteBtn = new Button("Delete");
+        deleteBtn.getStyleClass().add("confirm-delete-button");
+        deleteBtn.setMaxWidth(Double.MAX_VALUE);
+        deleteBtn.setOnAction(e -> {
+            JSONObject res = NetworkManager.getInstance().deleteTweet(tweetId);
+            if (res.optBoolean("success")) {
+                userTweetsContainer.getChildren().remove(tweetBox);
+                //Update tweet count
+                int currentCount = Integer.parseInt(tweetCountLabel.getText());
+                tweetCountLabel.setText(String.valueOf(Math.max(0, currentCount - 1)));
+            }
+            modal.close();
+        });
+
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.getStyleClass().add("cancel-delete-button");
+        cancelBtn.setMaxWidth(Double.MAX_VALUE);
+        cancelBtn.setOnAction(e -> modal.close());
+
+        container.getChildren().addAll(title, body, deleteBtn, cancelBtn);
+
+        Scene scene = new Scene(container);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+
+        modal.setScene(scene);
+
+        javafx.stage.Window owner = userTweetsContainer.getScene().getWindow();
+        modal.setX(owner.getX() + (owner.getWidth() - 320) / 2);
+        modal.setY(owner.getY() + (owner.getHeight() - 400) / 2);
+
+        modal.show();
     }
 
     private void openTweetDetails(int tweetId) {
