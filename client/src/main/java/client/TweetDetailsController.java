@@ -151,6 +151,14 @@ public class TweetDetailsController {
                                 imgView.setFitWidth(220);
                             }
                             imgView.setPreserveRatio(true);
+
+                            imgView.setStyle("-fx-cursor: hand;");
+                            final String currentPath = path;
+                            imgView.setOnMouseClicked(event -> {
+                                event.consume();
+                                ImageViewerUtils.openFullSizeImage(card.getScene(), currentPath);
+                            });
+
                             imagesLayout.getChildren().add(imgView);
                         }
                     } catch (Exception ignored) {}

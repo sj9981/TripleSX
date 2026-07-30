@@ -100,8 +100,8 @@
         <Separator style="-fx-background-color: #2f3336; -fx-opacity: 0.3;"/>
 
         <HBox spacing="40" alignment="CENTER">
-            <Label text="Posts" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 4 0; -fx-padding: 0 0 10 0;"/>
-            <Label text="Replies" style="-fx-text-fill: #71767b; -fx-padding: 0 0 10 0;"/>
+            <Label fx:id="postsTab" text="Posts" onMouseClicked="#showPostsSection" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: #1d9bf0; -fx-border-width: 0 0 4 0; -fx-padding: 0 0 10 0; -fx-cursor: hand;"/>
+            <Label fx:id="repliesTab" text="Replies" onMouseClicked="#showRepliesSection" style="-fx-text-fill: #71767b; -fx-padding: 0 0 10 0; -fx-cursor: hand;"/>
             <Label text="Media" style="-fx-text-fill: #71767b; -fx-padding: 0 0 10 0;"/>
             <Label text="Likes" style="-fx-text-fill: #71767b; -fx-padding: 0 0 10 0;"/>
         </HBox>

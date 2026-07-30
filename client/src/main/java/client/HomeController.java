@@ -267,9 +267,18 @@ public class HomeController {
                             if (imagePaths.length() == 1) {
                                 iv.setFitWidth(400);
                             } else {
-                                iv.setFitWidth(200); // Scale down when displaying side-by-side
+                                iv.setFitWidth(200);
                             }
                             iv.setPreserveRatio(true);
+
+                            // Visual hint and click hook
+                            iv.setStyle("-fx-cursor: hand;");
+                            final String currentPath = path;
+                            iv.setOnMouseClicked(event -> {
+                                event.consume();
+                                ImageViewerUtils.openFullSizeImage(card.getScene(), currentPath);
+                            });
+
                             imagesLayout.getChildren().add(iv);
                         }
                     } catch (Exception ignored) {}
