@@ -971,4 +971,116 @@ public class DatabaseManager
         }
         return list;
     }
+    public static JSONArray getUserLikedTweets(String profileUsername, String loggedInUsername) {
+        JSONArray tweets = new JSONArray();
+        int loggedInUserId = getUserIdByUsername(loggedInUsername);
+        if (loggedInUserId == -1) return tweets;
+
+        String sql = "SELECT t.id AS tweet_id, t.content, t.created_at, " +
+                     "u.display_name, u.username, " +
+                     "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
+                     "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                     "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                     "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
+                     "FROM tweets t " +
+                     "JOIN users u ON t.user_id = u.id " +
+                     "JOIN likes l ON t.id = l.tweet_id " +
+                     "JOIN users liked_by ON l.user_id = liked_by.id " +
+                     "WHERE liked_by.username = ? " +
+                     "ORDER BY l.created_at DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, loggedInUserId);
+            pstmt.setString(2, profileUsername);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject tweet = new JSONObject();
+                    tweet.put("tweet_id", rs.getInt("tweet_id"));
+                    tweet.put("content", rs.getString("content"));
+
+                    String mediaPathsStr = rs.getString("final_media_paths");
+                    JSONArray mediaArray = new JSONArray();
+                    if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                        for (String p : mediaPathsStr.split(",")) {
+                            mediaArray.put(p.trim());
+                        }
+                    }
+                    tweet.put("image_paths", mediaArray);
+
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
+
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                    tweet.put("reply_count", rs.getInt("reply_count"));
+                    tweet.put("display_name", rs.getString("display_name"));
+                    tweet.put("username", rs.getString("username"));
+                    tweets.put(tweet);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving user liked tweets: " + e.getMessage());
+        }
+        return tweets;
+    }
+
+    public static JSONArray getUserMediaTweets(String profileUsername, String loggedInUsername) {
+        JSONArray tweets = new JSONArray();
+        int profileUserId = getUserIdByUsername(profileUsername);
+        int loggedInUserId = getUserIdByUsername(loggedInUsername);
+
+        if (profileUserId == -1) return tweets;
+
+        String sql = "SELECT DISTINCT t.id AS tweet_id, t.content, t.created_at, " +
+                     "u.display_name, u.username, " +
+                     "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
+                     "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
+                     "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
+                     "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
+                     "FROM tweets t " +
+                     "JOIN users u ON t.user_id = u.id " +
+                     "JOIN tweet_media tm ON t.id = tm.tweet_id " +
+                     "WHERE t.user_id = ? " +
+                     "ORDER BY t.created_at DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, loggedInUserId);
+            pstmt.setInt(2, profileUserId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    JSONObject tweet = new JSONObject();
+                    tweet.put("tweet_id", rs.getInt("tweet_id"));
+                    tweet.put("content", rs.getString("content"));
+
+                    String mediaPathsStr = rs.getString("final_media_paths");
+                    JSONArray mediaArray = new JSONArray();
+                    if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                        for (String p : mediaPathsStr.split(",")) {
+                            mediaArray.put(p.trim());
+                        }
+                    }
+                    tweet.put("image_paths", mediaArray);
+
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
+                    tweet.put("created_at", formattedDate);
+
+                    tweet.put("like_count", rs.getInt("like_count"));
+                    tweet.put("is_liked", rs.getInt("is_liked") > 0);
+                    tweet.put("reply_count", rs.getInt("reply_count"));
+                    tweet.put("display_name", rs.getString("display_name"));
+                    tweet.put("username", rs.getString("username"));
+                    tweets.put(tweet);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving user media tweets: " + e.getMessage());
+        }
+        return tweets;
+    }
 }
