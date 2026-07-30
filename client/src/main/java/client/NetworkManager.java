@@ -3,7 +3,7 @@ package client;
 import javafx.application.Platform;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
+import java.util.Base64;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -129,13 +129,15 @@ public class NetworkManager
         request.put("username", username);
         request.put("content", content);
 
-        JSONArray pathsArray = new JSONArray();
+        // CONVERT PATHS TO RAW DATA
+        JSONArray imageDataArray = new JSONArray();
         if (imagePaths != null) {
-            for (String p : imagePaths) {
-                pathsArray.put(p);
+            for (String path : imagePaths) {
+                String base64 = FileTransferUtils.encodeFileToBase64(path);
+                if (base64 != null) imageDataArray.put(base64);
             }
         }
-        request.put("image_paths", pathsArray);
+        request.put("image_data", imageDataArray);
 
         if (parentTweetId > 0) {
             request.put("parent_tweet_id", parentTweetId);
@@ -182,8 +184,13 @@ public class NetworkManager
         request.put("display_name", newName);
         request.put("new_username", newUsername);
         request.put("bio", newBio);
-        request.put("avatar_path", avatarPath == null ? "" : avatarPath);
-        request.put("banner_path", bannerPath == null ? "" : bannerPath);
+
+        if (avatarPath != null && !avatarPath.isEmpty()) {
+            request.put("avatar_data", FileTransferUtils.encodeFileToBase64(avatarPath));
+        }
+        if (bannerPath != null && !bannerPath.isEmpty()) {
+            request.put("banner_data", FileTransferUtils.encodeFileToBase64(bannerPath));
+        }
         return sendRequestObject(request);
     }
 
@@ -199,6 +206,18 @@ public class NetworkManager
         {
             return buildErrorResponse("Invalid JSON request: " + e.getMessage()).toString();
         }
+    }
+
+    public String downloadImageFromServer(String fileName) {
+        JSONObject request = new JSONObject();
+        request.put("action", "download_image");
+        request.put("file_name", fileName);
+
+        JSONObject response = sendRequestObject(request);
+        if (response != null && response.optBoolean("success")) {
+            return response.getString("image_data");
+        }
+        return null;
     }
 
     public JSONObject sendRequestObject(JSONObject request)

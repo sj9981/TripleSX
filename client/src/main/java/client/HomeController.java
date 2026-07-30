@@ -252,23 +252,14 @@ public class HomeController {
         JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
         if (imagePaths != null && imagePaths.length() > 0) {
             HBox imagesLayout = new HBox(8);
-            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
             for (int j = 0; j < imagePaths.length(); j++) {
-                String path = imagePaths.getString(j);
-                if (path != null && !path.trim().isEmpty() && !"null".equalsIgnoreCase(path)) {
-                    try {
-                        File imgFile = new File(path);
-                        if (imgFile.exists()) {
-                            ImageView iv = new ImageView(new Image(imgFile.toURI().toString()));
-                            if (imagePaths.length() == 1) {
-                                iv.setFitWidth(400);
-                            } else {
-                                iv.setFitWidth(200); // Scale down when displaying side-by-side
-                            }
-                            iv.setPreserveRatio(true);
-                            imagesLayout.getChildren().add(iv);
-                        }
-                    } catch (Exception ignored) {}
+                String fileName = imagePaths.getString(j);
+                Image tweetImg = resolveImage(fileName); // This now triggers the download/cache
+                if (tweetImg != null) {
+                    ImageView iv = new ImageView(tweetImg);
+                    iv.setFitWidth(imagePaths.length() == 1 ? 400 : 200);
+                    iv.setPreserveRatio(true);
+                    imagesLayout.getChildren().add(iv);
                 }
             }
             card.getChildren().add(imagesLayout);
@@ -470,44 +461,22 @@ public class HomeController {
         return defaultImg;
     }
 
-    private Image resolveImage(String path) {
-        if (path == null || path.trim().isEmpty()) {
+    private Image resolveImage(String pathOrName) {
+        if (pathOrName == null || pathOrName.isEmpty() || "null".equalsIgnoreCase(pathOrName)) {
             return loadDefaultAvatar();
         }
 
-        try {
-            File file = new File(path);
-            if (file.exists()) {
-                Image img = new Image(file.toURI().toString(), false);
-                if (!img.isError()) {
-                    return img;
-                }
-            }
-        } catch (Exception ignored) {}
+        // 1. Check if it's a server-side filename (e.g., "773a...png")
+        if (!pathOrName.contains("/") && !pathOrName.contains("\\")) {
+            Image cachedImg = ImageCacheManager.getImage(pathOrName);
+            if (cachedImg != null) return cachedImg;
+        }
 
+        // 2. Fallback for internal resources (e.g., "/logo.png")
         try {
-            String resourcePath = path.startsWith("/") ? path : "/" + path;
-            InputStream stream = getClass().getResourceAsStream(resourcePath);
-            if (stream != null) {
-                Image img = new Image(stream);
-                if (!img.isError()) {
-                    return img;
-                }
-            }
-        } catch (Exception ignored) {}
-
-        try
-        {
-            String fileNameOnly = new File(path).getName();
-            InputStream stream = getClass().getResourceAsStream("/" + fileNameOnly);
-            if (stream != null)
-            {
-                Image img = new Image(stream);
-                if (!img.isError())
-                {
-                    return img;
-                }
-            }
+            String resPath = pathOrName.startsWith("/") ? pathOrName : "/" + pathOrName;
+            java.io.InputStream stream = getClass().getResourceAsStream(resPath);
+            if (stream != null) return new Image(stream);
         } catch (Exception ignored) {}
 
         return loadDefaultAvatar();

@@ -128,21 +128,13 @@ public class TweetDetailsController {
             HBox imagesLayout = new HBox(8);
             imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
             for (int j = 0; j < imagePaths.length(); j++) {
-                String path = imagePaths.getString(j);
-                if (path != null && !path.trim().isEmpty()) {
-                    try {
-                        File file = new File(path);
-                        if (file.exists()) {
-                            ImageView imgView = new ImageView(new Image(file.toURI().toString()));
-                            if (imagePaths.length() == 1) {
-                                imgView.setFitWidth(450);
-                            } else {
-                                imgView.setFitWidth(220);
-                            }
-                            imgView.setPreserveRatio(true);
-                            imagesLayout.getChildren().add(imgView);
-                        }
-                    } catch (Exception ignored) {}
+                String fileName = imagePaths.getString(j);
+                Image tweetImg = resolveImage(fileName); // Syncs with server automatically
+                if (tweetImg != null) {
+                    ImageView imgView = new ImageView(tweetImg);
+                    imgView.setFitWidth(imagePaths.length() == 1 ? 450 : 220);
+                    imgView.setPreserveRatio(true);
+                    imagesLayout.getChildren().add(imgView);
                 }
             }
             card.getChildren().add(imagesLayout);
@@ -288,12 +280,22 @@ public class TweetDetailsController {
         btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + (isLiked ? "#f4212e" : "#71767b") + "; -fx-cursor: hand; -fx-font-size: 14px;");
     }
 
-    private Image resolveImage(String path) {
-        if (path == null || path.trim().isEmpty()) return loadDefaultAvatar();
+    private Image resolveImage(String pathOrName) {
+        if (pathOrName == null || pathOrName.isEmpty()) return loadDefaultAvatar();
+        //trigger server sync.
+        if (!pathOrName.contains("/") && !pathOrName.contains("\\")) {
+            Image cached = ImageCacheManager.getImage(pathOrName);
+            if (cached != null) return cached;
+        }
+
         try {
-            File file = new File(path);
+            File file = new File(pathOrName);
             if (file.exists()) return new Image(file.toURI().toString());
+
+            java.io.InputStream stream = getClass().getResourceAsStream(pathOrName.startsWith("/") ? pathOrName : "/" + pathOrName);
+            if (stream != null) return new Image(stream);
         } catch (Exception ignored) {}
+
         return loadDefaultAvatar();
     }
 
