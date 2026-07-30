@@ -85,6 +85,7 @@
         <Label fx:id="statusLabel"
                text=""
                wrapText="true"
+               minHeight="-Infinity"
                styleClass="auth-subtitle"/>
 
         <Button text="Sign Up"
