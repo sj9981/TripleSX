@@ -426,4 +426,10 @@ public class NetworkManager
         request.put("tweet_id", tweetId);
         return sendRequestObject(request);
     }
+    public JSONObject getTrendingHashtags(int limit) {
+        JSONObject request = new JSONObject();
+        request.put("action", "get_trending_hashtags");
+        request.put("limit", limit);
+        return sendRequestObject(request);
+    }
 }

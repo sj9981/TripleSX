@@ -35,7 +35,11 @@ public class SearchController {
     private VBox tweetsContainer;
 
     @FXML
+    private VBox trendsContainer;
+
+    @FXML
     public void initialize() {
+        loadTrendingHashtags();
     }
 
     @FXML
@@ -295,4 +299,43 @@ public class SearchController {
             prefillAndSearch(link.getText());
         }
     }
+    private void loadTrendingHashtags() {
+        if (trendsContainer == null) return;
+        trendsContainer.getChildren().clear();
+
+        try {
+            JSONObject response = NetworkManager.getInstance().getTrendingHashtags(5);
+            if (response != null && response.optBoolean("success", false)) {
+                JSONArray trends = response.optJSONArray("trends");
+                if (trends != null && trends.length() > 0) {
+                    for (int i = 0; i < trends.length(); i++) {
+                        JSONObject trend = trends.getJSONObject(i);
+                        addTrendItem(trend.getString("tag"), "Trending posts", trend.getInt("count"));
+                    }
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Database trend retrieval failed, loading default trends: " + e.getMessage());
+        }
+
+        addTrendItem("Java", "Trending in Technology", -1);
+        addTrendItem("TripleSX", "Programming · Trending", -1);
+    }
+
+    private void addTrendItem(String tag, String category, int count) {
+        VBox itemBox = new VBox(2);
+
+        String textLabel = (count >= 0) ? category + " · " + count + " posts" : category;
+        Label descLabel = new Label(textLabel);
+        descLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
+
+        Hyperlink link = new Hyperlink("#" + tag);
+        link.setStyle("-fx-text-fill: #1d9bf0; -fx-font-weight: bold; -fx-underline: false; -fx-padding: 0; -fx-border-color: transparent; -fx-background-color: transparent;");
+        link.setOnAction(e -> prefillAndSearch("#" + tag));
+
+        itemBox.getChildren().addAll(descLabel, link);
+        trendsContainer.getChildren().add(itemBox);
+    }
+
 }
