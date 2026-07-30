@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
@@ -22,6 +23,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import javafx.scene.control.Hyperlink;
+
 public class HomeController {
     private static HomeController instance;
 
@@ -34,8 +37,17 @@ public class HomeController {
     @FXML
     private Circle userAvatarCircle;
 
+    @FXML
+    private HBox imagePreviewContainer;
+
+    @FXML
+    private Label charCountLabel;
+
+    @FXML
+    private Button postButton;
+
     private String username;
-    private String selectedImagePath = "";
+    private final java.util.List<String> selectedImagePaths = new java.util.ArrayList<>();
 
     private final Map<String, Image> avatarCache = new HashMap<>();
 
@@ -50,6 +62,30 @@ public class HomeController {
     @FXML
     public void initialize() {
         instance = this;
+
+        if (tweetTextArea != null && charCountLabel != null && postButton != null) {
+            tweetTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue == null) {
+                    charCountLabel.setText("280");
+                    postButton.setDisable(false);
+                    return;
+                }
+                int length = newValue.length();
+                int remaining = 280 - length;
+                charCountLabel.setText(String.valueOf(remaining));
+
+                if (remaining < 0) {
+                    charCountLabel.setStyle("-fx-text-fill: #f4212e; -fx-font-weight: bold;");
+                    postButton.setDisable(true);
+                } else if (remaining <= 20) {
+                    charCountLabel.setStyle("-fx-text-fill: #ffd400; -fx-font-weight: bold;");
+                    postButton.setDisable(false);
+                } else {
+                    charCountLabel.setStyle("-fx-text-fill: #71767b; -fx-font-weight: normal;");
+                    postButton.setDisable(false);
+                }
+            });
+        }
     }
 
     public void setUsername(String username) {
@@ -77,7 +113,8 @@ public class HomeController {
     }
 
     @FXML
-    private void handlePostTweet() {
+    private void handlePostTweet()
+    {
         String tweetText = tweetTextArea.getText().trim();
         String currentUser = SessionManager.getInstance().getUsername();
 
@@ -86,17 +123,23 @@ public class HomeController {
             return;
         }
 
-        if (tweetText.isEmpty() && selectedImagePath.isEmpty()) {
+        if (tweetText.isEmpty() && selectedImagePaths.isEmpty()) {
             System.out.println("Nothing to post.");
             return;
         }
 
+        if (tweetText.length() > 280) {
+            System.err.println("Tweet exceeds 280 characters.");
+            return;
+        }
+
         JSONObject response = NetworkManager.getInstance()
-                .createTweet(currentUser, tweetText, selectedImagePath);
+                .createTweet(currentUser, tweetText, selectedImagePaths, -1);
 
         if (response != null && response.optBoolean("success", false)) {
             tweetTextArea.clear();
-            selectedImagePath = "";
+            selectedImagePaths.clear();
+            updateImagePreviews();
             loadTweetsFromServer();
         } else {
             System.err.println("Failed to post tweet: " +
@@ -186,9 +229,7 @@ public class HomeController {
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
         header.setOnMouseClicked(e -> { e.consume(); navigateToProfile(authorUsername); });
 
-        // Delete Button logic
         String currentUser = SessionManager.getInstance().getUsername();
-        // Only show delete if I have access.
         if (authorUsername.equalsIgnoreCase(currentUser) || retweetedBy.equalsIgnoreCase(currentUser)) {
             javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
             HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
@@ -205,24 +246,33 @@ public class HomeController {
             header.getChildren().addAll(spacer, deleteBtn);
         }
 
-        Label contentLabel = new Label(text);
-        contentLabel.getStyleClass().add("content-label");
-        contentLabel.setWrapText(true);
-        card.getChildren().addAll(header, contentLabel);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 15, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
-        if (!imagePath.isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
-            try {
-                File imgFile = new File(imagePath);
-                if (imgFile.exists()) {
-                    ImageView iv = new ImageView(new Image(imgFile.toURI().toString()));
-                    iv.setFitWidth(400);
-                    iv.setPreserveRatio(true);
-                    card.getChildren().add(iv);
+        JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty() && !"null".equalsIgnoreCase(path)) {
+                    try {
+                        File imgFile = new File(path);
+                        if (imgFile.exists()) {
+                            ImageView iv = new ImageView(new Image(imgFile.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                iv.setFitWidth(400);
+                            } else {
+                                iv.setFitWidth(200); // Scale down when displaying side-by-side
+                            }
+                            iv.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(iv);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {}
+            }
+            card.getChildren().add(imagesLayout);
         }
-
-        // Like Button
         Button likeBtn = new Button();
         final int[] localLikeCount = {likeCount};
         final boolean[] localIsLiked = {isLikedByMe};
@@ -246,7 +296,6 @@ public class HomeController {
             }
         });
 
-        // Retweet Button
         Button retweetBtn = new Button();
         final int[] localRtCount = {rtCount};
         final boolean[] localIsRetweeted = {isRetweetedByMe};
@@ -270,7 +319,6 @@ public class HomeController {
             }
         });
 
-        // Reply Button
         Button replyBtn = new Button("💬 " + replyCount);
         replyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #71767b; -fx-cursor: hand;");
         replyBtn.setOnAction(e -> { e.consume(); openTweetDetails(originalContentId); });
@@ -279,18 +327,15 @@ public class HomeController {
         actionsBar.setPadding(new javafx.geometry.Insets(5, 0, 5, 0));
         card.getChildren().add(actionsBar);
 
-        // --- FOOTER ---
         Label timeLabel = new Label(createdAt);
         timeLabel.getStyleClass().add("time-label");
         card.getChildren().add(timeLabel);
 
-        // Click card to see details
         card.setOnMouseClicked(event -> {
             if (event.getTarget() instanceof Button) return;
             openTweetDetails(originalContentId);
         });
 
-        // Add to container
         if (prepend) feedContainer.getChildren().add(0, card);
         else feedContainer.getChildren().add(card);
     }
@@ -451,12 +496,15 @@ public class HomeController {
             }
         } catch (Exception ignored) {}
 
-        try {
+        try
+        {
             String fileNameOnly = new File(path).getName();
             InputStream stream = getClass().getResourceAsStream("/" + fileNameOnly);
-            if (stream != null) {
+            if (stream != null)
+            {
                 Image img = new Image(stream);
-                if (!img.isError()) {
+                if (!img.isError())
+                {
                     return img;
                 }
             }
@@ -465,21 +513,28 @@ public class HomeController {
         return loadDefaultAvatar();
     }
 
-    private Image loadDefaultAvatar() {
-        try {
+    private Image loadDefaultAvatar()
+    {
+        try
+        {
             InputStream stream = getClass().getResourceAsStream("/default-avatar.png");
-            if (stream != null) {
+            if (stream != null)
+            {
                 return new Image(stream);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             System.err.println("Default avatar resource not found!");
         }
         return null;
     }
 
     @FXML
-    private void handleLogout() {
-        try {
+    private void handleLogout()
+    {
+        try
+        {
             NetworkManager.getInstance().disconnect();
 
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
@@ -487,14 +542,18 @@ public class HomeController {
             stage.setScene(new Scene(root));
             stage.setTitle("Login");
             stage.show();
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             e.printStackTrace();
         }
     }
 
     @FXML
-    private void handleGoToProfile() {
-        try {
+    private void handleGoToProfile()
+    {
+        try
+        {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/profile.fxml"));
             Parent root = loader.load();
 
@@ -516,19 +575,80 @@ public class HomeController {
     }
 
     @FXML
-    private void handleChooseImage() {
+    private void handleChooseImage()
+    {
         FileChooser chooser = new FileChooser();
         chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg")
+                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif")
         );
 
-        File file = chooser.showOpenDialog(feedContainer.getScene().getWindow());
-        if (file != null) {
-            selectedImagePath = file.getAbsolutePath();
-            System.out.println("Selected image: " + selectedImagePath);
+        java.util.List<File> files = chooser.showOpenMultipleDialog(feedContainer.getScene().getWindow());
+        if (files != null && !files.isEmpty())
+        {
+            for (File file : files) {
+                String absolutePath = file.getAbsolutePath();
+                if (!selectedImagePaths.contains(absolutePath)) {
+                    selectedImagePaths.add(absolutePath);
+                }
+            }
+            updateImagePreviews();
         }
     }
 
+    private void updateImagePreviews() {
+        imagePreviewContainer.getChildren().clear();
+        if (selectedImagePaths.isEmpty()) {
+            imagePreviewContainer.setVisible(false);
+            imagePreviewContainer.setManaged(false);
+            return;
+        }
+
+        imagePreviewContainer.setVisible(true);
+        imagePreviewContainer.setManaged(true);
+
+        for (String path : selectedImagePaths) {
+            try {
+                File file = new File(path);
+                if (file.exists()) {
+                    StackPane itemPane = new StackPane();
+                    itemPane.setPrefSize(100, 100);
+                    itemPane.setMaxSize(100, 100);
+
+                    ImageView iv = new ImageView(new Image(file.toURI().toString()));
+                    iv.setFitWidth(100);
+                    iv.setFitHeight(100);
+                    iv.setPreserveRatio(false);
+
+                    javafx.scene.shape.Rectangle clipRect = new javafx.scene.shape.Rectangle(100, 100);
+                    clipRect.setArcWidth(16);
+                    clipRect.setArcHeight(16);
+                    iv.setClip(clipRect);
+
+                    Button removeBtn = new Button("✕");
+                    removeBtn.setStyle("-fx-background-color: rgba(0,0,0,0.7); -fx-text-fill: white; -fx-background-radius: 12; -fx-font-size: 10px; -fx-padding: 2 5; -fx-cursor: hand;");
+                    removeBtn.setOnAction(e -> {
+                        selectedImagePaths.remove(path);
+                        updateImagePreviews();
+                    });
+
+                    StackPane.setAlignment(removeBtn, javafx.geometry.Pos.TOP_RIGHT);
+                    StackPane.setMargin(removeBtn, new javafx.geometry.Insets(4));
+
+                    itemPane.getChildren().addAll(iv, removeBtn);
+                    imagePreviewContainer.getChildren().add(itemPane);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @FXML
+    private void handleRemovePreview()
+    {
+        selectedImagePaths.clear();
+        updateImagePreviews();
+    }
     @FXML
     private void handleGoToSearch()
     {
@@ -551,9 +671,18 @@ public class HomeController {
             e.printStackTrace();
         }
     }
+
     public void removeTweetFromFeed(int tweetId) {
         feedContainer.getChildren().removeIf(node ->
                 node instanceof VBox && Integer.valueOf(tweetId).equals(node.getUserData())
         );
+    }
+
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            HashtagUtils.navigateToSearchWithQuery(link.getScene(), link.getText());
+        }
     }
 }

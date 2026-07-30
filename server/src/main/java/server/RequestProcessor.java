@@ -153,6 +153,8 @@ public class RequestProcessor {
             String email = request.optString("email", "").trim();
             String password = request.optString("password", "").trim();
 
+            String banner = null;
+
             if (username.isEmpty() || password.isEmpty()) {
                 res.put("success", false);
                 res.put("message", "Username and password are required.");
@@ -166,7 +168,6 @@ public class RequestProcessor {
             String displayName = request.optString("displayName", username);
             String bio = request.optString("bio", "");
             String avatar = request.optString("avatar", "default.png");
-            String banner = request.optString("banner", "default_banner.png");
 
             boolean success = DatabaseManager.registerUser(username, email, password, displayName, bio, avatar, banner);
             res.put("success", success);
@@ -207,10 +208,22 @@ public class RequestProcessor {
         try {
             String username = request.getString("username");
             String content = request.getString("content");
-            String imagePath = request.optString("image_path", "").trim();
             int parentTweetId = request.optInt("parent_tweet_id", -1);
 
-            boolean success = DatabaseManager.createTweet(username, content, imagePath, parentTweetId);
+            JSONArray imagePathsJson = request.optJSONArray("image_paths");
+            java.util.List<String> imagePaths = new java.util.ArrayList<>();
+            if (imagePathsJson != null) {
+                for (int i = 0; i < imagePathsJson.length(); i++) {
+                    imagePaths.add(imagePathsJson.getString(i));
+                }
+            } else {
+                String imagePath = request.optString("image_path", "").trim();
+                if (!imagePath.isEmpty()) {
+                    imagePaths.add(imagePath);
+                }
+            }
+
+            boolean success = DatabaseManager.createTweet(username, content, imagePaths, parentTweetId);
 
             res.put("success", success);
             res.put("message", success ? "Tweet published!" : "Failed to publish tweet.");
@@ -223,7 +236,12 @@ public class RequestProcessor {
                 newTweetNotification.put("username", username);
                 newTweetNotification.put("author", username);
                 newTweetNotification.put("content", content);
-                newTweetNotification.put("image_path", imagePath);
+
+                JSONArray pathsArray = new JSONArray();
+                for (String p : imagePaths) {
+                    pathsArray.put(p);
+                }
+                newTweetNotification.put("image_paths", pathsArray);
                 newTweetNotification.put("created_at", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
                 for (String follower : followers) {
@@ -316,6 +334,7 @@ public class RequestProcessor {
             int userId = DatabaseManager.getUserIdByUsername(username);
             int followerCount = DatabaseManager.getFollowerCount(userId);
             int followingCount = DatabaseManager.getFollowingCount(userId);
+            int tweetCount = DatabaseManager.getTweetCount(userId);
 
             String loggedInUser = request.optString("loggedInUser", "");
             boolean isFollowing = false;
@@ -337,6 +356,7 @@ public class RequestProcessor {
             userProfileJson.put("bannerPath", userProfileData.getBannerPath());
             userProfileJson.put("followerCount", followerCount);
             userProfileJson.put("followingCount", followingCount);
+            userProfileJson.put("tweetCount", tweetCount);
 
             res.put("user", userProfileJson);
             res.put("tweets", DatabaseManager.getUserTweets(username, loggedInUser));
@@ -368,6 +388,7 @@ public class RequestProcessor {
         return res;
     }
 
+    // متد کامل و آپدیت شده در RequestProcessor.java
     private JSONObject handleUpdateProfile(JSONObject request) {
         JSONObject res = new JSONObject();
         try {
@@ -376,8 +397,10 @@ public class RequestProcessor {
             String newUsername = request.getString("new_username");
             String newBio = request.getString("bio");
             String avatarPath = request.optString("avatar_path", "");
+            String bannerPath = request.optString("banner_path", "");
 
-            boolean success = DatabaseManager.updateProfile(oldUsername, newName, newUsername, newBio, avatarPath);
+            boolean success = DatabaseManager.updateProfile(oldUsername, newName, newUsername, newBio, avatarPath, bannerPath);
+
             res.put("success", success);
             res.put("message", success ? "Profile updated successfully." : "Profile update failed.");
         } catch (Exception e) {

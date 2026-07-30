@@ -12,6 +12,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
+import javafx.scene.control.Hyperlink;
+
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import org.json.JSONArray;
@@ -136,24 +138,32 @@ public class SearchController {
 
         header.getChildren().addAll(avatar, nameLabel, handleLabel);
 
-        Label contentLabel = new Label(text);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 14px;");
-        contentLabel.setWrapText(true);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(text, 14, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
-        card.getChildren().addAll(header, contentLabel);
-
-        if (!imagePath.trim().isEmpty() && !"null".equalsIgnoreCase(imagePath)) {
-            try {
-                File imageFile = new File(imagePath);
-                if (imageFile.exists()) {
-                    Image image = new Image(imageFile.toURI().toString());
-                    ImageView imageView = new ImageView(image);
-                    imageView.setFitWidth(300);
-                    imageView.setPreserveRatio(true);
-                    card.getChildren().add(imageView);
+        JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty() && !"null".equalsIgnoreCase(path)) {
+                    try {
+                        File imageFile = new File(path);
+                        if (imageFile.exists()) {
+                            ImageView imageView = new ImageView(new Image(imageFile.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                imageView.setFitWidth(300);
+                            } else {
+                                imageView.setFitWidth(150);
+                            }
+                            imageView.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(imageView);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {
             }
+            card.getChildren().add(imagesLayout);
         }
 
         Label timeLabel = new Label(createdAt);
@@ -270,6 +280,19 @@ public class SearchController {
             stage.show();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+   public void prefillAndSearch(String query) {
+        if (searchField != null) {
+            searchField.setText(query);
+            handleSearch();
+        }
+    }
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            prefillAndSearch(link.getText());
         }
     }
 }

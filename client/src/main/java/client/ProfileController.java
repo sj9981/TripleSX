@@ -7,6 +7,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -30,9 +32,13 @@ public class ProfileController
     @FXML private Label bioLabel;
     @FXML private Label followerCountLabel;
     @FXML private Label followingCountLabel;
+    @FXML private Label tweetCountLabel;
     @FXML private VBox userTweetsContainer;
-
+    @FXML private ImageView bannerImageView;
+    @FXML private Button followButton;
+    @FXML private Label postsLabel;
     private String currentUsername;
+    private boolean isFollowingCurrent;
 
     @FXML
     public void initialize()
@@ -50,8 +56,6 @@ public class ProfileController
         Circle clip = new Circle(50, 50, 50);
         avatarImageView.setClip(clip);
     }
-    @FXML private Button followButton;
-    private boolean isFollowingCurrent;
 
     public void initUserData(String username)
     {
@@ -80,11 +84,7 @@ public class ProfileController
     private void loadProfileData() {
         try {
             JSONObject response = NetworkManager.getInstance().getUserProfile(currentUsername);
-
-            if (!response.optBoolean("success", false)) {
-                System.err.println("Profile request failed.");
-                return;
-            }
+            if (response == null || !response.optBoolean("success", false)) return;
 
             this.isFollowingCurrent = response.optBoolean("isFollowing", false);
             updateFollowButtonUI();
@@ -92,11 +92,29 @@ public class ProfileController
             JSONObject user = response.getJSONObject("user");
             displayNameLabel.setText(user.optString("displayName", "No Name"));
             usernameLabel.setText("@" + user.optString("username", currentUsername));
-            bioLabel.setText(user.optString("bio", "No bio yet..."));
+            bioLabel.setText(user.optString("bio", ""));
             followerCountLabel.setText(String.valueOf(user.optInt("followerCount", 0)));
             followingCountLabel.setText(String.valueOf(user.optInt("followingCount", 0)));
 
+            int tweetCount = user.optInt("tweetCount", 0);
+
+            if (tweetCountLabel != null) {
+                tweetCountLabel.setText(String.valueOf(tweetCount));
+            }
+
+            if (postsLabel != null) {
+                postsLabel.setText(tweetCount == 1 ? "Post" : "Posts");
+            }
+
             loadAvatarImage(user.optString("avatarPath", ""));
+
+            String bPath = user.optString("bannerPath", "");
+            Image bannerImg = resolveImage(bPath, "/default-banner.png");
+            if (bannerImg != null) {
+                bannerImageView.setImage(bannerImg);
+            } else {
+                showDefaultBanner();
+            }
 
             JSONArray tweets = response.optJSONArray("tweets");
             userTweetsContainer.getChildren().clear();
@@ -107,7 +125,14 @@ public class ProfileController
             }
         } catch (Exception e) {
             e.printStackTrace();
-            setDefaultAvatar();
+        }
+    }
+
+    private void showDefaultBanner() {
+        try {
+            bannerImageView.setImage(new Image(getClass().getResourceAsStream("/default-banner.png")));
+        } catch (Exception e) {
+            bannerImageView.setImage(null);
         }
     }
 
@@ -147,8 +172,7 @@ public class ProfileController
     {
         try
         {
-            Image image = resolveImage(path);
-
+            Image image = resolveImage(path, "/default-avatar.png");
             if (image != null && !image.isError())
             {
                 avatarImageView.setImage(image);
@@ -157,7 +181,6 @@ public class ProfileController
             {
                 setDefaultAvatar();
             }
-
         }
         catch (Exception e)
         {
@@ -166,11 +189,11 @@ public class ProfileController
         }
     }
 
-    private Image resolveImage(String path)
+    private Image resolveImage(String path, String defaultResource)
     {
-        if (path == null || path.trim().isEmpty())
+        if (path == null || path.trim().isEmpty() || "null".equalsIgnoreCase(path))
         {
-            return loadDefaultAvatarImage();
+            return loadResourceImage(defaultResource);
         }
 
         try
@@ -225,43 +248,28 @@ public class ProfileController
         {
         }
 
-        return loadDefaultAvatarImage();
+        return loadResourceImage(defaultResource);
     }
 
-    private Image loadDefaultAvatarImage()
+    private Image loadResourceImage(String resourcePath)
     {
-        String[] candidates = {
-                "/default-avatar.png",
-                "/test-avatar.png"
-        };
-
-        for (String path : candidates)
+        try
         {
-            try
+            InputStream stream = getClass().getResourceAsStream(resourcePath);
+            if (stream != null)
             {
-                java.net.URL url = getClass().getResource(path);
-                if (url == null)
-                {
-                    continue;
-                }
-
-                Image image = new Image(url.toExternalForm(), false);
-                if (!image.isError())
-                {
-                    return image;
-                }
-            }
-            catch (Exception ignored)
-            {
+                return new Image(stream);
             }
         }
-
+        catch (Exception ignored)
+        {
+        }
         return null;
     }
 
     private void setDefaultAvatar()
     {
-        Image defaultImage = loadDefaultAvatarImage();
+        Image defaultImage = loadResourceImage("/default-avatar.png");
         if (defaultImage != null)
         {
             avatarImageView.setImage(defaultImage);
@@ -282,13 +290,11 @@ public class ProfileController
         tweetBox.setStyle("-fx-cursor: hand;");
 
         HBox topRow = new HBox();
-        Label contentLabel = new Label(content);
-        contentLabel.getStyleClass().add("content-label");
-        contentLabel.setWrapText(true);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 15, "#e7e9ea");
 
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        topRow.getChildren().addAll(contentLabel, spacer);
+        topRow.getChildren().addAll(contentFlow, spacer);
 
         String loggedInUser = SessionManager.getInstance().getUsername();
         if (loggedInUser != null && loggedInUser.equalsIgnoreCase(currentUsername)) {
@@ -302,19 +308,31 @@ public class ProfileController
         }
         tweetBox.getChildren().add(topRow);
 
-        if (imagePath != null && !imagePath.isEmpty()) {
-            try {
-                File file = new File(imagePath);
-                if (file.exists()) {
-                    ImageView imageView = new ImageView(new Image(file.toURI().toString()));
-                    imageView.setFitWidth(350);
-                    imageView.setPreserveRatio(true);
-                    tweetBox.getChildren().add(imageView);
+        JSONArray imagePaths = tweetJson.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty()) {
+                    try {
+                        File file = new File(path);
+                        if (file.exists()) {
+                            ImageView imageView = new ImageView(new Image(file.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                imageView.setFitWidth(350);
+                            } else {
+                                imageView.setFitWidth(170);
+                            }
+                            imageView.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(imageView);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {}
+            }
+            tweetBox.getChildren().add(imagesLayout);
         }
 
-        // Like Logic
         Button likeBtn = new Button();
         final int[] pLikes = {likeCount};
         final boolean[] pIsLiked = {isLiked};
@@ -413,7 +431,6 @@ public class ProfileController
             stage.setScene(new Scene(root, width, height));
             stage.setTitle("X Clone - Home");
             stage.show();
-
         }
         catch (IOException e)
         {
@@ -429,7 +446,11 @@ public class ProfileController
 
             EditProfileController controller = loader.getController();
             controller.setPreviousScene("/profile.fxml");
-            controller.setUsername(currentUsername);
+
+            String currentName = displayNameLabel.getText() != null ? displayNameLabel.getText() : "";
+            String currentBio = bioLabel.getText() != null ? bioLabel.getText() : "";
+
+            controller.initUserData(currentName, currentUsername, currentBio);
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             double w = stage.getWidth();
@@ -444,7 +465,6 @@ public class ProfileController
             e.printStackTrace();
         }
     }
-
     @FXML
     private void showFollowers() {
         openFollowList(true);
@@ -471,7 +491,6 @@ public class ProfileController
     }
 
     private void updateRtButtonStyle(Button btn, boolean isRetweeted, int count) {
-
         btn.setText("🔄 " + count);
         if (isRetweeted) {
             btn.setStyle(

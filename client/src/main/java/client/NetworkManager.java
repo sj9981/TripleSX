@@ -1,6 +1,7 @@
 package client;
 
 import javafx.application.Platform;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -122,21 +123,38 @@ public class NetworkManager
         return sendRequestObject(request);
     }
 
-    public JSONObject createTweet(String username, String content, String imagePath, int parentTweetId) {
+    public JSONObject createTweet(String username, String content, java.util.List<String> imagePaths, int parentTweetId) {
         JSONObject request = new JSONObject();
         request.put("action", "create_tweet");
         request.put("username", username);
         request.put("content", content);
-        request.put("image_path", imagePath == null ? "" : imagePath);
+
+        JSONArray pathsArray = new JSONArray();
+        if (imagePaths != null) {
+            for (String p : imagePaths) {
+                pathsArray.put(p);
+            }
+        }
+        request.put("image_paths", pathsArray);
+
         if (parentTweetId > 0) {
             request.put("parent_tweet_id", parentTweetId);
         }
         return sendRequestObject(request);
     }
 
+    public JSONObject createTweet(String username, String content, java.util.List<String> imagePaths)
+    {
+        return createTweet(username, content, imagePaths, -1);
+    }
+
     public JSONObject createTweet(String username, String content, String imagePath)
     {
-        return createTweet(username, content, imagePath, -1);
+        java.util.List<String> paths = new java.util.ArrayList<>();
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            paths.add(imagePath);
+        }
+        return createTweet(username, content, paths, -1);
     }
 
     public JSONObject getTweetDetails(int tweetId) {
@@ -157,7 +175,7 @@ public class NetworkManager
         return sendRequestObject(request);
     }
 
-    public JSONObject updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath) {
+    public JSONObject updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath, String bannerPath) {
         JSONObject request = new JSONObject();
         request.put("action", "update_profile");
         request.put("old_username", oldUsername);
@@ -165,6 +183,7 @@ public class NetworkManager
         request.put("new_username", newUsername);
         request.put("bio", newBio);
         request.put("avatar_path", avatarPath == null ? "" : avatarPath);
+        request.put("banner_path", bannerPath == null ? "" : bannerPath);
         return sendRequestObject(request);
     }
 

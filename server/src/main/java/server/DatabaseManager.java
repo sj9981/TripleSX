@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "123456";
+    private static final String PASSWORD = "12345";
     private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -126,7 +126,7 @@ public class DatabaseManager
         return false;
     }
 
-    public static boolean createTweet(String username, String content, String imagePath, int parentTweetId)
+    public static boolean createTweet(String username, String content, java.util.List<String> imagePaths, int parentTweetId)
     {
         int userId = getUserIdByUsername(username);
         if (userId == -1) return false;
@@ -173,13 +173,18 @@ public class DatabaseManager
                     }
                 }
 
-                if (imagePath != null && !imagePath.isEmpty())
+                if (imagePaths != null && !imagePaths.isEmpty())
                 {
                     try (PreparedStatement pstmt = conn.prepareStatement(mediaSql))
                     {
-                        pstmt.setInt(1, tweetId);
-                        pstmt.setString(2, imagePath);
-                        pstmt.executeUpdate();
+                        for (String path : imagePaths) {
+                            if (path != null && !path.trim().isEmpty()) {
+                                pstmt.setInt(1, tweetId);
+                                pstmt.setString(2, path);
+                                pstmt.addBatch();
+                            }
+                        }
+                        pstmt.executeBatch();
                     }
                 }
 
@@ -214,8 +219,8 @@ public class DatabaseManager
         }
     }
 
-    public static boolean createTweet(String username, String content, String imagePath) {
-        return createTweet(username, content, imagePath, -1);
+    public static boolean createTweet(String username, String content, java.util.List<String> imagePaths) {
+        return createTweet(username, content, imagePaths, -1);
     }
 
     private static int getOrCreateHashtag(Connection conn, String tag) throws SQLException {
@@ -259,8 +264,8 @@ public class DatabaseManager
 
         int loggedInUserId = getUserIdByUsername(loggedInUsername);
 
-        // main tweet
-        String mainSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
+        String mainSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, " +
+                "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
                 "(SELECT COUNT(*) FROM tweets WHERE is_retweet_of = t.id) AS retweet_count, " +
@@ -268,21 +273,19 @@ public class DatabaseManager
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
-                "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
                 "WHERE t.id = ?";
-        // replies
-        String repliesSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
+
+        String repliesSql = "SELECT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, " +
+                "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
-                "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
                 "WHERE t.parent_tweet_id = ? " +
                 "ORDER BY t.created_at ASC";
 
         try (Connection conn = getConnection()) {
-            // 1. Fetch Main Tweet
             try (PreparedStatement ps = conn.prepareStatement(mainSql)) {
                 ps.setInt(1, loggedInUserId);
                 ps.setInt(2, loggedInUserId);
@@ -300,7 +303,15 @@ public class DatabaseManager
                         Timestamp ts = rs.getTimestamp("created_at");
                         tweet.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
 
-                        tweet.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
+                        String mediaPathsStr = rs.getString("final_media_paths");
+                        JSONArray mediaArray = new JSONArray();
+                        if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                            for (String p : mediaPathsStr.split(",")) {
+                                mediaArray.put(p.trim());
+                            }
+                        }
+                        tweet.put("image_paths", mediaArray);
+
                         tweet.put("like_count", rs.getInt("like_count"));
                         tweet.put("is_liked", rs.getInt("is_liked") > 0);
                         tweet.put("retweet_count", rs.getInt("retweet_count"));
@@ -316,7 +327,6 @@ public class DatabaseManager
                 }
             }
 
-            // Fetch Replies
             JSONArray replies = new JSONArray();
             try (PreparedStatement ps = conn.prepareStatement(repliesSql)) {
                 ps.setInt(1, loggedInUserId);
@@ -333,7 +343,15 @@ public class DatabaseManager
                         Timestamp ts = rs.getTimestamp("created_at");
                         reply.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
 
-                        reply.put("image_path", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
+                        String mediaPathsStr = rs.getString("final_media_paths");
+                        JSONArray mediaArray = new JSONArray();
+                        if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                            for (String p : mediaPathsStr.split(",")) {
+                                mediaArray.put(p.trim());
+                            }
+                        }
+                        reply.put("image_paths", mediaArray);
+
                         reply.put("like_count", rs.getInt("like_count"));
                         reply.put("is_liked", rs.getInt("is_liked") > 0);
                         reply.put("reply_count", rs.getInt("reply_count"));
@@ -487,14 +505,14 @@ public class DatabaseManager
 
         if (profileUserId == -1) return tweets;
 
-        String sql = "SELECT t.id AS tweet_id, t.content, m.media_path, t.created_at, " +
+        String sql = "SELECT t.id AS tweet_id, t.content, t.created_at, " +
                 "u.display_name, u.username, " +
+                "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT 1 FROM likes WHERE tweet_id = t.id AND user_id = ?) AS is_liked, " +
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
-                "LEFT JOIN tweet_media m ON t.id = m.tweet_id " +
                 "WHERE t.user_id = ? " +
                 "ORDER BY t.created_at DESC";
 
@@ -508,7 +526,15 @@ public class DatabaseManager
                     JSONObject tweet = new JSONObject();
                     tweet.put("tweet_id", rs.getInt("tweet_id"));
                     tweet.put("content", rs.getString("content"));
-                    tweet.put("imagePath", rs.getString("media_path") == null ? "" : rs.getString("media_path"));
+
+                    String mediaPathsStr = rs.getString("final_media_paths");
+                    JSONArray mediaArray = new JSONArray();
+                    if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                        for (String p : mediaPathsStr.split(",")) {
+                            mediaArray.put(p.trim());
+                        }
+                    }
+                    tweet.put("image_paths", mediaArray);
 
                     Timestamp ts = rs.getTimestamp("created_at");
                     String formattedDate = (ts != null) ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "";
@@ -517,10 +543,9 @@ public class DatabaseManager
                     tweet.put("like_count", rs.getInt("like_count"));
                     tweet.put("is_liked", rs.getInt("is_liked") > 0);
                     tweet.put("reply_count", rs.getInt("reply_count"));
-                    tweets.put(tweet);
-
                     tweet.put("display_name", rs.getString("display_name"));
                     tweet.put("username", rs.getString("username"));
+                    tweets.put(tweet);
                 }
             }
         } catch (SQLException e) {
@@ -538,10 +563,10 @@ public class DatabaseManager
                         "u.username AS person_who_tweeted, " +
                         "COALESCE(orig_u.username, u.username) AS author_username, " +
                         "COALESCE(orig_u.display_name, u.display_name) AS author_display_name, " +
-                        "COALESCE(orig_u.avatar_path, u.avatar_path) AS author_avatar, " + // This was missing in mapping
+                        "COALESCE(orig_u.avatar_path, u.avatar_path) AS author_avatar, " +
                         "COALESCE(orig_t.content, t.content) AS final_content, " +
                         "t.created_at, " +
-                        "COALESCE(orig_tm.media_path, tm.media_path) AS final_media_path, " +
+                        "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = COALESCE(t.is_retweet_of, t.id)) AS final_media_paths, " +
                         " (SELECT COUNT(*) FROM likes WHERE tweet_id = COALESCE(t.is_retweet_of, t.id)) AS like_count, " +
                         " (SELECT COUNT(*) FROM tweets WHERE is_retweet_of = COALESCE(t.is_retweet_of, t.id)) AS retweet_count, " +
                         " (SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = COALESCE(t.is_retweet_of, t.id)) AS reply_count, " +
@@ -551,8 +576,6 @@ public class DatabaseManager
                         "JOIN users u ON t.user_id = u.id " +
                         "LEFT JOIN tweets orig_t ON t.is_retweet_of = orig_t.id " +
                         "LEFT JOIN users orig_u ON orig_t.user_id = orig_u.id " +
-                        "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
-                        "LEFT JOIN tweet_media orig_tm ON orig_tm.tweet_id = orig_t.id " +
                         "WHERE t.parent_tweet_id IS NULL " +
                         "AND (t.user_id = (SELECT id FROM users WHERE username = ?) OR t.user_id IN (SELECT following_id FROM follows WHERE follower_id = (SELECT id FROM users WHERE username = ?))) " +
                         "ORDER BY t.created_at DESC";
@@ -578,7 +601,16 @@ public class DatabaseManager
                     tweet.put("display_name", rs.getString("author_display_name"));
                     tweet.put("avatar_path", rs.getString("author_avatar") == null ? "" : rs.getString("author_avatar"));
                     tweet.put("content", rs.getString("final_content"));
-                    tweet.put("image_path", rs.getString("final_media_path") == null ? "" : rs.getString("final_media_path"));
+
+                    String mediaPathsStr = rs.getString("final_media_paths");
+                    JSONArray mediaArray = new JSONArray();
+                    if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                        for (String p : mediaPathsStr.split(",")) {
+                            mediaArray.put(p.trim());
+                        }
+                    }
+                    tweet.put("image_paths", mediaArray);
+
                     tweet.put("like_count", rs.getInt("like_count"));
                     tweet.put("retweet_count", rs.getInt("retweet_count"));
                     tweet.put("reply_count", rs.getInt("reply_count"));
@@ -599,6 +631,7 @@ public class DatabaseManager
         }
         return result;
     }
+
     public static java.util.List<String> getFollowers(String username)
     {
         java.util.List<String> followers = new java.util.ArrayList<>();
@@ -620,9 +653,9 @@ public class DatabaseManager
         return followers;
     }
 
-    public static boolean updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath)
+    public static boolean updateProfile(String oldUsername, String newName, String newUsername, String newBio, String avatarPath, String bannerPath)
     {
-        String sql = "UPDATE users SET display_name = ?, username = ?, bio = ?, avatar_path = ? WHERE username = ?";
+        String sql = "UPDATE users SET display_name = ?, username = ?, bio = ?, avatar_path = ?, banner_path = ? WHERE username = ?";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql))
         {
@@ -630,16 +663,19 @@ public class DatabaseManager
             ps.setString(2, newUsername);
             ps.setString(3, newBio);
 
-            if (avatarPath == null || avatarPath.trim().isEmpty())
-            {
+            if (avatarPath == null || avatarPath.trim().isEmpty()) {
                 ps.setNull(4, java.sql.Types.VARCHAR);
-            }
-            else
-            {
+            } else {
                 ps.setString(4, avatarPath);
             }
 
-            ps.setString(5, oldUsername);
+            if (bannerPath == null || bannerPath.trim().isEmpty()) {
+                ps.setNull(5, java.sql.Types.VARCHAR);
+            } else {
+                ps.setString(5, bannerPath);
+            }
+
+            ps.setString(6, oldUsername);
 
             return ps.executeUpdate() > 0;
         }
@@ -662,12 +698,12 @@ public class DatabaseManager
         String userSql = "SELECT username, display_name, bio, avatar_path FROM users " +
                 "WHERE username ILIKE ? OR display_name ILIKE ?";
 
-        String tweetSql = "SELECT DISTINCT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, tm.media_path, " +
+        String tweetSql = "SELECT DISTINCT t.id AS tweet_id, u.username, u.display_name, u.avatar_path, t.content, t.created_at, " +
+                "(SELECT string_agg(media_path, ',') FROM tweet_media WHERE tweet_id = t.id) AS final_media_paths, " +
                 "(SELECT COUNT(*) FROM likes WHERE tweet_id = t.id) AS like_count, " +
                 "(SELECT COUNT(*) FROM tweets WHERE parent_tweet_id = t.id) AS reply_count " +
                 "FROM tweets t " +
                 "JOIN users u ON t.user_id = u.id " +
-                "LEFT JOIN tweet_media tm ON tm.tweet_id = t.id " +
                 "LEFT JOIN tweet_hashtags th ON th.tweet_id = t.id " +
                 "LEFT JOIN hashtags h ON h.id = th.hashtag_id " +
                 "WHERE t.content ILIKE ? OR h.tag ILIKE ? " +
@@ -710,7 +746,16 @@ public class DatabaseManager
 
                         Timestamp ts = rs.getTimestamp("created_at");
                         tweet.put("created_at", ts != null ? ts.toLocalDateTime().format(TIMESTAMP_FORMATTER) : "");
-                        tweet.put("image_path", rs.getString("media_path") != null ? rs.getString("media_path") : "");
+
+                        String mediaPathsStr = rs.getString("final_media_paths");
+                        JSONArray mediaArray = new JSONArray();
+                        if (mediaPathsStr != null && !mediaPathsStr.trim().isEmpty()) {
+                            for (String p : mediaPathsStr.split(",")) {
+                                mediaArray.put(p.trim());
+                            }
+                        }
+                        tweet.put("image_paths", mediaArray);
+
                         tweet.put("like_count", rs.getInt("like_count"));
                         tweet.put("reply_count", rs.getInt("reply_count"));
                         tweets.put(tweet);
@@ -866,5 +911,27 @@ public class DatabaseManager
             System.err.println("Error removing retweet: " + e.getMessage());
         }
         return -1;
+    }
+
+    public static int getTweetCount(int userId)
+    {
+        String sql = "SELECT COUNT(*) FROM tweets WHERE user_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, userId);
+            try (ResultSet rs = pstmt.executeQuery())
+            {
+                if (rs.next())
+                {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Error getting tweet count: " + e.getMessage());
+        }
+        return 0;
     }
 }

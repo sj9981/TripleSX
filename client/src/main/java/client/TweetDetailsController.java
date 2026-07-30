@@ -15,6 +15,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
+import javafx.scene.control.Hyperlink;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -27,8 +28,37 @@ public class TweetDetailsController {
     @FXML private VBox mainTweetContainer;
     @FXML private TextArea replyTextArea;
     @FXML private VBox repliesContainer;
+    @FXML private Label replyCharCountLabel;
+    @FXML private Button replyButton;
 
     private int currentTweetId;
+
+    @FXML
+    public void initialize() {
+        if (replyTextArea != null && replyCharCountLabel != null && replyButton != null) {
+            replyTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue == null) {
+                    replyCharCountLabel.setText("280");
+                    replyButton.setDisable(false);
+                    return;
+                }
+                int length = newValue.length();
+                int remaining = 280 - length;
+                replyCharCountLabel.setText(String.valueOf(remaining));
+
+                if (remaining < 0) {
+                    replyCharCountLabel.setStyle("-fx-text-fill: #f4212e; -fx-font-weight: bold;");
+                    replyButton.setDisable(true);
+                } else if (remaining <= 20) {
+                    replyCharCountLabel.setStyle("-fx-text-fill: #ffd400; -fx-font-weight: bold;");
+                    replyButton.setDisable(false);
+                } else {
+                    replyCharCountLabel.setStyle("-fx-text-fill: #71767b; -fx-font-weight: normal;");
+                    replyButton.setDisable(false);
+                }
+            });
+        }
+    }
 
     public void setTweetId(int tweetId) {
         this.currentTweetId = tweetId;
@@ -60,7 +90,6 @@ public class TweetDetailsController {
         String displayName = tweetObj.optString("display_name", author);
         String content = tweetObj.optString("content", "");
         String createdAt = tweetObj.optString("created_at", "");
-        String imagePath = tweetObj.optString("image_path", "");
         String avatarPath = tweetObj.optString("avatar_path", "");
         int likeCount = tweetObj.optInt("like_count", 0);
         boolean isLiked = tweetObj.optBoolean("is_liked", false);
@@ -91,22 +120,32 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-        Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 18px;");
-        contentLabel.setWrapText(true);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 18, "#e7e9ea");
+        card.getChildren().addAll(header, contentFlow);
 
-        card.getChildren().addAll(header, contentLabel);
-
-        if (!imagePath.trim().isEmpty()) {
-            try {
-                File file = new File(imagePath);
-                if (file.exists()) {
-                    ImageView imgView = new ImageView(new Image(file.toURI().toString()));
-                    imgView.setFitWidth(450);
-                    imgView.setPreserveRatio(true);
-                    card.getChildren().add(imgView);
+        JSONArray imagePaths = tweetObj.optJSONArray("image_paths");
+        if (imagePaths != null && imagePaths.length() > 0) {
+            HBox imagesLayout = new HBox(8);
+            imagesLayout.setStyle("-fx-padding: 5 0 5 0;");
+            for (int j = 0; j < imagePaths.length(); j++) {
+                String path = imagePaths.getString(j);
+                if (path != null && !path.trim().isEmpty()) {
+                    try {
+                        File file = new File(path);
+                        if (file.exists()) {
+                            ImageView imgView = new ImageView(new Image(file.toURI().toString()));
+                            if (imagePaths.length() == 1) {
+                                imgView.setFitWidth(450);
+                            } else {
+                                imgView.setFitWidth(220);
+                            }
+                            imgView.setPreserveRatio(true);
+                            imagesLayout.getChildren().add(imgView);
+                        }
+                    } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {}
+            }
+            card.getChildren().add(imagesLayout);
         }
 
         Label timeLabel = new Label(createdAt);
@@ -133,7 +172,7 @@ public class TweetDetailsController {
                 }
             }
         });
-        //retweet button logic
+
         Button rtBtn = new Button();
         final int[] rCount = {rtCount};
         final boolean[] rRetweeted = {isRetweeted};
@@ -196,14 +235,12 @@ public class TweetDetailsController {
             navigateToProfile(author);
         });
 
-        Label contentLabel = new Label(content);
-        contentLabel.setStyle("-fx-text-fill: #e7e9ea; -fx-font-size: 14px;");
-        contentLabel.setWrapText(true);
+        javafx.scene.text.TextFlow contentFlow = HashtagUtils.parseTweetContent(content, 14, "#e7e9ea");
 
         Label timeLabel = new Label(createdAt);
         timeLabel.setStyle("-fx-text-fill: #71767b; -fx-font-size: 12px;");
 
-        card.getChildren().addAll(header, contentLabel, timeLabel);
+        card.getChildren().addAll(header, contentFlow, timeLabel);
         card.setOnMouseClicked(e -> setTweetId(replyId));
 
         repliesContainer.getChildren().add(card);
@@ -231,8 +268,14 @@ public class TweetDetailsController {
         String replyText = replyTextArea.getText().trim();
         if (replyText.isEmpty()) return;
 
+        if (replyText.length() > 280) {
+            System.err.println("Reply exceeds 280 characters.");
+            return;
+        }
+
         String currentUser = SessionManager.getInstance().getUsername();
-        JSONObject response = NetworkManager.getInstance().createTweet(currentUser, replyText, "", currentTweetId);
+
+        JSONObject response = NetworkManager.getInstance().createTweet(currentUser, replyText, new java.util.ArrayList<>(), currentTweetId);
 
         if (response != null && response.optBoolean("success", false)) {
             replyTextArea.clear();
@@ -306,5 +349,13 @@ public class TweetDetailsController {
             Stage stage = (Stage) mainTweetContainer.getScene().getWindow();
             stage.setScene(new Scene(root));
         } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    @FXML
+    private void handleTrendClick(javafx.event.ActionEvent event) {
+        if (event.getSource() instanceof Hyperlink) {
+            Hyperlink link = (Hyperlink) event.getSource();
+            HashtagUtils.navigateToSearchWithQuery(link.getScene(), link.getText());
+        }
     }
 }
