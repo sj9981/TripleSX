@@ -162,6 +162,14 @@ public class SearchController {
                                 imageView.setFitWidth(150);
                             }
                             imageView.setPreserveRatio(true);
+
+                            imageView.setStyle("-fx-cursor: hand;");
+                            final String currentPath = path;
+                            imageView.setOnMouseClicked(event -> {
+                                event.consume();
+                                ImageViewerUtils.openFullSizeImage(card.getScene(), currentPath);
+                            });
+
                             imagesLayout.getChildren().add(imageView);
                         }
                     } catch (Exception ignored) {}

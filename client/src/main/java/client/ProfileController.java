@@ -352,6 +352,14 @@ public class ProfileController
                             ImageView imageView = new ImageView(new Image(file.toURI().toString()));
                             imageView.setFitWidth(imagePaths.length() == 1 ? 400 : 200);
                             imageView.setPreserveRatio(true);
+
+                            imageView.setStyle("-fx-cursor: hand;");
+                            final String currentPath = path;
+                            imageView.setOnMouseClicked(event -> {
+                                event.consume();
+                                ImageViewerUtils.openFullSizeImage(tweetBox.getScene(), currentPath);
+                            });
+
                             imagesLayout.getChildren().add(imageView);
                         }
                     } catch (Exception ignored) {}
