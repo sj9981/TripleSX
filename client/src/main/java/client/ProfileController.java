@@ -471,8 +471,12 @@ public class ProfileController
             if (res.optBoolean("success")) {
                 userTweetsContainer.getChildren().remove(tweetBox);
                 //Update tweet count
-                int currentCount = Integer.parseInt(tweetCountLabel.getText());
-                tweetCountLabel.setText(String.valueOf(Math.max(0, currentCount - 1)));
+
+                if (postsTab.getStyle().contains("white"))
+                {
+                    int currentCount = Integer.parseInt(tweetCountLabel.getText());
+                    tweetCountLabel.setText(String.valueOf(Math.max(0, currentCount - 1)));
+                }
             }
             modal.close();
         });

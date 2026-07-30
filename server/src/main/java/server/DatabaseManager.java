@@ -9,7 +9,7 @@ public class DatabaseManager
 {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "12345";
+    private static final String PASSWORD = "Sa123456*";
     private static final java.time.format.DateTimeFormatter TIMESTAMP_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -927,7 +927,7 @@ public class DatabaseManager
 
     public static int getTweetCount(int userId)
     {
-        String sql = "SELECT COUNT(*) FROM tweets WHERE user_id = ?";
+        String sql = "SELECT COUNT(*) FROM tweets WHERE user_id = ? AND parent_tweet_id IS NULL";
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql))
         {
