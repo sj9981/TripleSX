@@ -18,7 +18,6 @@
 - [🚀 Setup & Installation](#-setup--installation)
 - [📖 Usage Guide](#-usage-guide)
 - [💻 Code Examples](#-code-examples)
-- [📖 Usage Guide](#-usage-guide)
 - [📊 Database Design](#-database-design)
 - [📝 Changelog](#-changelog)
 - [👥 Contributors](#-contributors)
@@ -183,6 +182,28 @@ if (message.has("type")) {
     - `tweet_media`: Allows a one-to-many relationship for images per tweet.
     - `hashtags` & `tweet_hashtags`: Enables efficient searching and trend tracking.
     - `likes` & `follows`: Junction tables for many-to-many social interactions.
+---
+## 📝 Changelog
+
+- **v1.0.0 (Final Release)** 
+  - Real-time tweet delivery via TCP socket broadcast listener.
+  - Multi-image attachments with preview modals.
+  - Automatic `#hashtag` detection, global search, and trending topics.
+  - X-inspired Dark Theme with responsive JavaFX styling.
+
+- **v0.3.0 (Social Graph & Interactions)** 
+  - Follow/Unfollow system with live follower/following counts.
+  - Likes, retweets, and structured threaded reply chains.
+  - Personalized timeline algorithm for followed accounts.
+
+- **v0.2.0 (Tweets & Core Feed)** 
+  - Text tweet publishing, deletion, and timestamp tracking.
+  - Chronological home timeline and user profile post history.
+
+- **v0.1.0 (Architecture & Authentication)** 
+  - Multithreaded socket server (`CachedThreadPool`) & custom JSON protocol.
+  - PostgreSQL database schema with JDBC persistence.
+  - User registration, login, and secure password hashing with `jBCrypt`.
 ---
 ## 👥 Contributors
 - Saba Faramarzi (https://github.com/sabafaramarzi1385)
