@@ -69,12 +69,12 @@ public class HomeController {
         if (tweetTextArea != null && charCountLabel != null && postButton != null) {
             tweetTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue == null) {
-                    charCountLabel.setText("280");
+                    charCountLabel.setText("2000");
                     postButton.setDisable(false);
                     return;
                 }
                 int length = newValue.length();
-                int remaining = 280 - length;
+                int remaining = 2000 - length;
                 charCountLabel.setText(String.valueOf(remaining));
 
                 if (remaining < 0) {
@@ -132,8 +132,8 @@ public class HomeController {
             return;
         }
 
-        if (tweetText.length() > 280) {
-            System.err.println("Tweet exceeds 280 characters.");
+        if (tweetText.length() > 2000) {
+            System.err.println("Tweet exceeds 2000 characters.");
             return;
         }
 

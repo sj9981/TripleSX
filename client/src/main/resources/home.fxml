@@ -58,7 +58,7 @@
                         </HBox>
 
                         <HBox alignment="CENTER_RIGHT" spacing="15">
-                            <Label fx:id="charCountLabel" text="280" style="-fx-text-fill: #71767b; -fx-font-size: 14px;" />
+                            <Label fx:id="charCountLabel" text="2000" style="-fx-text-fill: #71767b; -fx-font-size: 14px;" />
                             <Button onAction="#handleChooseImage" styleClass="image-button" text="📸" />
                             <Button fx:id="postButton" onAction="#handlePostTweet" styleClass="post-button" text="Post" />
                         </HBox>
