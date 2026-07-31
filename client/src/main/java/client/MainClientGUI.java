@@ -15,12 +15,12 @@ public class MainClientGUI extends Application
         Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
         primaryStage.setTitle("X Clone - Login");
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/logo.png")));
-        Scene scene = new Scene(root, 1000, 700);
+        Scene scene = new Scene(root, 1200, 900);
         primaryStage.setScene(scene);
         primaryStage.setResizable(true);
         // Set Minimums
-        primaryStage.setMinWidth(900);
-        primaryStage.setMinHeight(650);
+        primaryStage.setMinWidth(1200);
+        primaryStage.setMinHeight(900);
         primaryStage.show();
     }
 
