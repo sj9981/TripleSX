@@ -362,3 +362,50 @@
 .delete-modal-pane {
     -fx-effect: dropshadow(three-pass-box, rgba(255,255,255,0.1), 10, 0, 0, 0);
 }
+
+/* Progress Bar Base */
+.tweet-progress-bar {
+    -fx-background-color: #2f3336;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-padding: 0;
+}
+
+.tweet-progress-bar > .track {
+    -fx-background-color: #2f3336;
+    -fx-background-radius: 10;
+}
+
+/* Default Progress Color (Blue) */
+.tweet-progress-bar > .bar {
+    -fx-background-color: #1d9bf0;
+    -fx-background-radius: 10;
+    -fx-background-insets: 0;
+}
+
+/* Warning State: Yellow (Used when < 200 chars left) */
+.progress-warn > .bar {
+    -fx-background-color: #ffd400;
+}
+
+/* Error State: Red (Used when < 20 chars left OR over limit) */
+.progress-error > .bar {
+    -fx-background-color: #f4212e;
+}
+
+/* Hide the bar when there is no text */
+.progress-hidden {
+    -fx-opacity: 0;
+}
+
+.post-button:pressed, .auth-button:pressed {
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+    -fx-opacity: 0.8;
+}
+
+.trends-panel VBox:hover {
+    -fx-background-color: #1d1f23;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}

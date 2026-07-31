@@ -44,12 +44,12 @@ public class TweetDetailsController {
         if (replyTextArea != null && replyCharCountLabel != null && replyButton != null) {
             replyTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue == null) {
-                    replyCharCountLabel.setText("280");
+                    replyCharCountLabel.setText("2000");
                     replyButton.setDisable(false);
                     return;
                 }
                 int length = newValue.length();
-                int remaining = 280 - length;
+                int remaining = 2000 - length;
                 replyCharCountLabel.setText(String.valueOf(remaining));
 
                 if (remaining < 0) {
@@ -312,8 +312,8 @@ public class TweetDetailsController {
         String replyText = replyTextArea.getText().trim();
         if (replyText.isEmpty()) return;
 
-        if (replyText.length() > 280) {
-            System.err.println("Reply exceeds 280 characters.");
+        if (replyText.length() > 2000) {
+            System.err.println("Reply exceeds 2000 characters.");
             return;
         }
 

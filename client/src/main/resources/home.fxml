@@ -13,6 +13,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.control.Hyperlink?>
 
+<?import javafx.scene.control.ProgressBar?>
 <HBox prefHeight="700.0" prefWidth="1000.0"
       style="-fx-background-color: black;"
       stylesheets="@style.css"
@@ -58,9 +59,26 @@
                         </HBox>
 
                         <HBox alignment="CENTER_RIGHT" spacing="15">
-                            <Label fx:id="charCountLabel" text="280" style="-fx-text-fill: #71767b; -fx-font-size: 14px;" />
-                            <Button onAction="#handleChooseImage" styleClass="image-button" text="📸" />
-                            <Button fx:id="postButton" onAction="#handlePostTweet" styleClass="post-button" text="Post" />
+                            <!-- Visual character limit indicator -->
+                            <ProgressBar fx:id="tweetProgressBar"
+                                         progress="0.0"
+                                         prefWidth="100.0"
+                                         prefHeight="6.0"
+                                         styleClass="tweet-progress-bar" />
+
+                            <Label fx:id="charCountLabel"
+                                   text="2000"
+                                   style="-fx-text-fill: #71767b; -fx-font-size: 13px; -fx-font-weight: bold;" />
+
+                            <Button onAction="#handleChooseImage"
+                                    styleClass="image-button"
+                                    text="📸" />
+
+                            <Button fx:id="postButton"
+                                    onAction="#handlePostTweet"
+                                    styleClass="post-button"
+                                    text="Post"
+                                    disable="true" /> <!-- Disabled by default until user types -->
                         </HBox>
                     </VBox>
 

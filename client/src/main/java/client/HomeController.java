@@ -49,6 +49,9 @@ public class HomeController {
     @FXML
     private Button postButton;
 
+    @FXML
+    private ProgressBar tweetProgressBar;
+
     private String username;
     private final java.util.List<String> selectedImagePaths = new java.util.ArrayList<>();
 
@@ -66,25 +69,55 @@ public class HomeController {
     public void initialize() {
         instance = this;
 
-        if (tweetTextArea != null && charCountLabel != null && postButton != null) {
+        if (tweetTextArea != null && charCountLabel != null && postButton != null && tweetProgressBar != null) {
+
+            // Hide progress bar initially
+            tweetProgressBar.getStyleClass().add("progress-hidden");
+            postButton.setDisable(true);
+
             tweetTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue == null) {
-                    charCountLabel.setText("280");
-                    postButton.setDisable(false);
-                    return;
-                }
-                int length = newValue.length();
-                int remaining = 280 - length;
+                String text = (newValue == null) ? "" : newValue;
+                int length = text.length();
+                int limit = 2000;
+                int remaining = limit - length;
+
+                // 1. Update text label
                 charCountLabel.setText(String.valueOf(remaining));
 
-                if (remaining < 0) {
-                    charCountLabel.setStyle("-fx-text-fill: #f4212e; -fx-font-weight: bold;");
+                // 2. Calculate progress (max 1.0)
+                double progressPercent = (double) length / limit;
+                tweetProgressBar.setProgress(Math.min(progressPercent, 1.0));
+
+                // 3. Reset style classes
+                tweetProgressBar.getStyleClass().removeAll("progress-warn", "progress-error", "progress-hidden");
+
+                // 4. Update UI State based on length
+                if (length == 0) {
+                    // Empty state
+                    tweetProgressBar.getStyleClass().add("progress-hidden");
                     postButton.setDisable(true);
-                } else if (remaining <= 20) {
-                    charCountLabel.setStyle("-fx-text-fill: #ffd400; -fx-font-weight: bold;");
+                }
+                else if (remaining < 0) {
+                    // Over the limit
+                    charCountLabel.setStyle("-fx-text-fill: #f4212e;");
+                    tweetProgressBar.getStyleClass().add("progress-error");
+                    postButton.setDisable(true);
+                }
+                else if (remaining <= 20) {
+                    // Red bar
+                    charCountLabel.setStyle("-fx-text-fill: #f4212e;");
+                    tweetProgressBar.getStyleClass().add("progress-error");
                     postButton.setDisable(false);
-                } else {
-                    charCountLabel.setStyle("-fx-text-fill: #71767b; -fx-font-weight: normal;");
+                }
+                else if (remaining <= 200) {
+                    // Yellow bar
+                    charCountLabel.setStyle("-fx-text-fill: #ffd400;");
+                    tweetProgressBar.getStyleClass().add("progress-warn");
+                    postButton.setDisable(false);
+                }
+                else {
+                    // Safe zone (Blue bar)
+                    charCountLabel.setStyle("-fx-text-fill: #71767b;");
                     postButton.setDisable(false);
                 }
             });
@@ -132,8 +165,8 @@ public class HomeController {
             return;
         }
 
-        if (tweetText.length() > 280) {
-            System.err.println("Tweet exceeds 280 characters.");
+        if (tweetText.length() > 2000) {
+            System.err.println("Tweet exceeds 2000 characters.");
             return;
         }
 
