@@ -397,3 +397,9 @@
 .progress-hidden {
     -fx-opacity: 0;
 }
+
+.post-button:pressed, .auth-button:pressed {
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+    -fx-opacity: 0.8;
+}
