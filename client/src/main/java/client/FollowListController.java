@@ -41,10 +41,13 @@ public class FollowListController {
         HBox row = new HBox(15);
         row.setStyle("-fx-padding: 10; -fx-cursor: hand;");
 
-        Circle avatar = new Circle(20, Color.GRAY);
+        Circle avatar = new Circle(20);
         String path = user.optString("avatarPath", "");
-        if (!path.isEmpty() && new File(path).exists()) {
-            avatar.setFill(new ImagePattern(new Image(new File(path).toURI().toString())));
+        Image avatarImg = resolveImage(path);
+        if (avatarImg != null) {
+            avatar.setFill(new ImagePattern(avatarImg));
+        } else {
+            avatar.setFill(Color.GRAY);
         }
 
         VBox texts = new VBox(2);
@@ -70,4 +73,40 @@ public class FollowListController {
     }
 
     @FXML private void handleBack() { navigateToProfile(profileOwner); }
+    private Image resolveImage(String path) {
+        if (path == null || path.trim().isEmpty() || "null".equalsIgnoreCase(path)
+            || "default.png".equalsIgnoreCase(path)
+            || "default-avatar.png".equalsIgnoreCase(path)) {
+            return loadDefaultAvatar();
+        }
+
+        try {
+            File file = new File(path);
+            if (file.exists()) {
+                Image img = new Image(file.toURI().toString(), false);
+                if (!img.isError()) return img;
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            String resourcePath = path.startsWith("/") ? path : "/" + path;
+            java.io.InputStream stream = getClass().getResourceAsStream(resourcePath);
+            if (stream != null) {
+                Image img = new Image(stream);
+                if (!img.isError()) return img;
+            }
+        } catch (Exception ignored) {}
+
+        return loadDefaultAvatar();
+    }
+
+    private Image loadDefaultAvatar() {
+        try {
+            java.io.InputStream stream = getClass().getResourceAsStream("/default-avatar.png");
+            if (stream != null) {
+                return new Image(stream);
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
 }
