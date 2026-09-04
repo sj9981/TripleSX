@@ -287,7 +287,7 @@ public class SearchController {
             NetworkManager.getInstance().disconnect();
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
             Stage stage = (Stage) searchField.getScene().getWindow();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
             stage.setTitle("Login");
             stage.show();
         } catch (IOException e) {

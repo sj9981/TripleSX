@@ -148,7 +148,7 @@ public class RegisterController {
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
             Stage stage = (Stage) usernameField.getScene().getWindow();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
             stage.setTitle("X Clone - Login");
         } catch (Exception e) {
             e.printStackTrace();
