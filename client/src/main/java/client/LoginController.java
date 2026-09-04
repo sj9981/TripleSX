@@ -70,7 +70,7 @@ public class LoginController {
                     homeController.setUsername(username);
 
                     Stage stage = (Stage) usernameField.getScene().getWindow();
-                    stage.setScene(new Scene(root));
+                    stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
                     stage.setTitle("X Clone - Home");
                     stage.show();
 
@@ -103,7 +103,7 @@ public class LoginController {
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/register.fxml"));
             Stage stage = (Stage) usernameField.getScene().getWindow();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
             stage.setTitle("X Clone - Sign Up");
             stage.show();
         } catch (Exception e) {

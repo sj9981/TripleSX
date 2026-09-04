@@ -44,12 +44,12 @@ public class TweetDetailsController {
         if (replyTextArea != null && replyCharCountLabel != null && replyButton != null) {
             replyTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue == null) {
-                    replyCharCountLabel.setText("2000");
+                    replyCharCountLabel.setText("400");
                     replyButton.setDisable(false);
                     return;
                 }
                 int length = newValue.length();
-                int remaining = 2000 - length;
+                int remaining = 400 - length;
                 replyCharCountLabel.setText(String.valueOf(remaining));
 
                 if (remaining < 0) {
@@ -312,8 +312,8 @@ public class TweetDetailsController {
         String replyText = replyTextArea.getText().trim();
         if (replyText.isEmpty()) return;
 
-        if (replyText.length() > 2000) {
-            System.err.println("Reply exceeds 2000 characters.");
+        if (replyText.length() > 400) {
+            System.err.println("Reply exceeds 400 characters.");
             return;
         }
 
@@ -409,7 +409,7 @@ public class TweetDetailsController {
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
             Stage stage = (Stage) mainTweetContainer.getScene().getWindow();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
         } catch (IOException e) { e.printStackTrace(); }
     }
 

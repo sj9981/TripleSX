@@ -78,7 +78,7 @@ public class HomeController {
             tweetTextArea.textProperty().addListener((observable, oldValue, newValue) -> {
                 String text = (newValue == null) ? "" : newValue;
                 int length = text.length();
-                int limit = 2000;
+                int limit = 400;
                 int remaining = limit - length;
 
                 // 1. Update text label
@@ -165,8 +165,8 @@ public class HomeController {
             return;
         }
 
-        if (tweetText.length() > 2000) {
-            System.err.println("Tweet exceeds 2000 characters.");
+        if (tweetText.length() > 400) {
+            System.err.println("Tweet exceeds 400 characters.");
             return;
         }
 
@@ -585,7 +585,7 @@ public class HomeController {
 
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
             Stage stage = (Stage) feedContainer.getScene().getWindow();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
             stage.setTitle("Login");
             stage.show();
         }
